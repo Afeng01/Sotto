@@ -89,6 +89,12 @@ const api = {
     ipcRenderer.invoke(VOICE_APP_IPC.UPDATE_APP_SETTINGS, updates),
   checkHotkeyStatus: (): Promise<{ hotkey: string; registered: boolean }> =>
     ipcRenderer.invoke(VOICE_APP_IPC.CHECK_HOTKEY),
+  getHistory: (): Promise<Array<{ id: string; text: string; mode: 'cursor' | 'clipboard'; createdAt: number }>> =>
+    ipcRenderer.invoke(VOICE_APP_IPC.GET_HISTORY),
+  deleteHistoryEntry: (id: string): Promise<Array<{ id: string; text: string; mode: 'cursor' | 'clipboard'; createdAt: number }>> =>
+    ipcRenderer.invoke(VOICE_APP_IPC.DELETE_HISTORY_ENTRY, id),
+  clearHistory: (): Promise<void> =>
+    ipcRenderer.invoke(VOICE_APP_IPC.CLEAR_HISTORY),
   checkAccessibility: (): Promise<{ supported: boolean; enabled: boolean }> =>
     ipcRenderer.invoke(VOICE_APP_IPC.CHECK_ACCESSIBILITY),
   openAccessibilitySettings: (): Promise<void> =>

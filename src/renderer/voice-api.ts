@@ -39,11 +39,21 @@ export interface VoiceAPI {
   getAppSettings(): Promise<VoiceAppSettings>
   updateAppSettings(updates: { hotkey?: string; launchAtLogin?: boolean }): Promise<VoiceAppSettings>
   checkHotkeyStatus(): Promise<{ hotkey: string; registered: boolean }>
+  getHistory(): Promise<HistoryEntry[]>
+  deleteHistoryEntry(id: string): Promise<HistoryEntry[]>
+  clearHistory(): Promise<void>
   checkAccessibility(): Promise<{ supported: boolean; enabled: boolean }>
   openAccessibilitySettings(): Promise<void>
   openExternal(url: string): Promise<void>
   openSettings(): void
   quit(): void
+}
+
+export interface HistoryEntry {
+  id: string
+  text: string
+  mode: 'cursor' | 'clipboard'
+  createdAt: number
 }
 
 declare global {

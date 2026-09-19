@@ -9,8 +9,10 @@
 import * as React from 'react'
 import {
   CheckCircle2,
+  Copy,
   Eye,
   EyeOff,
+  History,
   Info,
   Loader2,
   Mic,
@@ -18,10 +20,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
+  Trash2,
   XCircle,
 } from 'lucide-react'
 import type { VoiceDictationSettings } from '@sotto/voice'
-import type { VoiceAppSettings } from './voice-api'
+import type { HistoryEntry, VoiceAppSettings } from './voice-api'
 
 const VOLCENGINE_SPEECH_SERVICE_URL = 'https://console.volcengine.com/speech/service/'
 const APP_VERSION = '0.1.0'
@@ -150,10 +153,11 @@ function HotkeyRecorder({
   )
 }
 
-type PageId = 'voice' | 'general' | 'permissions' | 'about'
+type PageId = 'voice' | 'history' | 'general' | 'permissions' | 'about'
 
 const PAGES: Array<{ id: PageId; label: string; icon: typeof Mic }> = [
   { id: 'voice', label: '语音输入', icon: Mic },
+  { id: 'history', label: '听写历史', icon: History },
   { id: 'general', label: '通用', icon: SlidersHorizontal },
   { id: 'permissions', label: '系统权限', icon: ShieldCheck },
   { id: 'about', label: '关于', icon: Info },
@@ -189,6 +193,15 @@ function InlineField({ label, hint, control }: { label: string; hint?: string; c
   )
 }
 
+function formatHistoryTime(timestamp: number): string {
+  const date = new Date(timestamp)
+  const now = new Date()
+  const sameDay = date.toDateString() === now.toDateString()
+  const time = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  if (sameDay) return `今天 ${time}`
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`
+}
+
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }): React.ReactElement {
   return (
     <button
@@ -218,6 +231,13 @@ export function SettingsApp(): React.ReactElement {
   const [hotkeyStatus, setHotkeyStatus] = React.useState<{ hotkey: string; registered: boolean } | null>(null)
   const [recordingHotkey, setRecordingHotkey] = React.useState(false)
   const [hotkeyError, setHotkeyError] = React.useState<string | null>(null)
+  const [history, setHistory] = React.useState<HistoryEntry[] | null>(null)
+  const [copiedId, setCopiedId] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (page !== 'history') return
+    window.voiceAPI.getHistory().then(setHistory).catch(console.error)
+  }, [page])
 
   React.useEffect(() => {
     void Promise.all([
@@ -473,6 +493,80 @@ export function SettingsApp(): React.ReactElement {
                     )}
                   </div>
                 </Section>
+              </>
+            )}
+
+            {page === 'history' && (
+              <>
+                <div className="mb-4 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">最近 100 条成功输出的听写记录，仅保存在本机。</span>
+                  {history && history.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void window.voiceAPI.clearHistory().then(() => setHistory([]))
+                      }}
+                      className="rounded-md border border-border px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                    >
+                      清空历史
+                    </button>
+                  )}
+                </div>
+                {history === null ? (
+                  <div className="flex items-center justify-center py-16 text-muted-foreground">
+                    <Loader2 className="mr-2 size-4 animate-spin" /> 加载中...
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border py-16 text-center text-sm text-muted-foreground">
+                    还没有听写记录
+                    <p className="mt-1.5 text-xs text-muted-foreground/70">按全局快捷键说一段话，成功输出的内容会出现在这里</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {history.map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="group rounded-lg border border-border px-3.5 py-2.5 transition-colors hover:border-ring/50"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="min-w-0 flex-1 whitespace-pre-wrap break-words text-sm leading-5 text-foreground [display:-webkit-box] [-webkit-line-clamp:3] [-webkit-box-orient:vertical]">
+                            {entry.text}
+                          </p>
+                          <div className="flex shrink-0 items-center gap-1">
+                            <button
+                              type="button"
+                              aria-label="复制"
+                              onClick={() => {
+                                void navigator.clipboard.writeText(entry.text).then(() => {
+                                  setCopiedId(entry.id)
+                                  setTimeout(() => setCopiedId((current) => (current === entry.id ? null : current)), 1200)
+                                })
+                              }}
+                              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                              {copiedId === entry.id ? <CheckCircle2 className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="删除"
+                              onClick={() => {
+                                void window.voiceAPI.deleteHistoryEntry(entry.id).then(setHistory)
+                              }}
+                              className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-destructive"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-2 text-[11px] text-muted-foreground/70">
+                          <span>{formatHistoryTime(entry.createdAt)}</span>
+                          <span>·</span>
+                          <span>{entry.mode === 'cursor' ? '写入光标' : '剪贴板'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </>
             )}
 

@@ -1,7 +1,7 @@
 {
   "name": "sotto",
   "productName": "Sotto",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "AGPL-3.0-only",
   "description": "Sotto（呦呦）— 独立常驻的系统级语音输入应用",
   "main": "dist/main.cjs",

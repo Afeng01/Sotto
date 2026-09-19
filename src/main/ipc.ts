@@ -24,6 +24,7 @@ import {
   updateVoiceDictationSettings,
 } from './settings-store'
 import { finishCaptureSession, isCaptureActive, resetCaptureSession, resizeCaptureWindow } from './voice-capture-window'
+import { addHistoryEntry, clearHistory, deleteHistoryEntry, getHistoryEntries } from './history-store'
 
 import { VOICE_APP_IPC_CHANNELS } from '../shared/ipc-channels'
 
@@ -107,11 +108,13 @@ function registerVoiceDictationHandlers(): void {
 
       if (settings.outputMode === 'clipboard') {
         clipboard.writeText(text)
+        addHistoryEntry(text, 'clipboard')
         return { mode: 'clipboard', success: true, message: '已复制到剪贴板' }
       }
 
       try {
         const result = await pasteTextAtCurrentCursor(text)
+        if (result.success) addHistoryEntry(text, 'cursor')
         return {
           mode: 'cursor',
           success: result.success,
@@ -119,6 +122,7 @@ function registerVoiceDictationHandlers(): void {
         }
       } catch (error) {
         clipboard.writeText(text)
+        addHistoryEntry(text, 'clipboard')
         const detail = error instanceof Error ? error.message : String(error)
         console.warn('[听写] 光标写入失败，已回退剪贴板:', detail)
         return { mode: 'clipboard', success: true, message: `光标写入失败，已复制到剪贴板（${detail}）` }
@@ -218,6 +222,10 @@ function registerAppHandlers(): void {
   ipcMain.handle(VOICE_APP_IPC_CHANNELS.GET_STATE, () => ({
     captureActive: isCaptureActive(),
   }))
+
+  ipcMain.handle(VOICE_APP_IPC_CHANNELS.GET_HISTORY, () => getHistoryEntries())
+  ipcMain.handle(VOICE_APP_IPC_CHANNELS.DELETE_HISTORY_ENTRY, (_event, id: string) => deleteHistoryEntry(assertString(id, 'id', 128)))
+  ipcMain.handle(VOICE_APP_IPC_CHANNELS.CLEAR_HISTORY, () => clearHistory())
 }
 
 export function registerVoiceIpcHandlers(): void {

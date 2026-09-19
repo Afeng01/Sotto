@@ -23,10 +23,16 @@ export function isCaptureActive(): boolean {
   return captureState !== 'idle'
 }
 
+export function debugCaptureState(): string {
+  const win = captureWindow && !captureWindow.isDestroyed() ? captureWindow : null
+  return `state=${captureState} window=${win ? (win.isVisible() ? 'visible' : 'hidden') : 'none'}`
+}
+
 /** 快捷键入口：唤起听写浮窗；录音中再次触发则通知 renderer 停止提交。 */
 export function toggleCaptureWindow(): void {
   // 未启用/未配置凭证时也弹窗：由 renderer 展示原因与“打开设置”入口，
   // 静默忽略会让用户以为快捷键坏了。
+  console.log('[听写] toggle 入口，', debugCaptureState())
   if (captureState === 'stopping') {
     // 停止/提交尚未完成时忽略重复触发，避免旧会话与新会话交叉。
     return
@@ -34,12 +40,20 @@ export function toggleCaptureWindow(): void {
 
   if (captureState === 'active') {
     captureState = 'stopping'
+    console.log('[听写] 发送停止指令')
     captureWindow?.webContents.send(VOICE_DICTATION_IPC_CHANNELS.TOGGLE_STOP)
     return
   }
 
   captureState = 'active'
   const win = getOrCreateCaptureWindow()
+  // ready-to-show 只在首次加载时触发一次；复用已有窗口时必须主动重新显示，
+  // 否则会话在后台跑、浮窗永远不再出现。
+  if (!win.isVisible()) {
+    positionCaptureWindow(win)
+    win.showInactive()
+    console.log('[听写] 重新显示浮窗，', debugCaptureState())
+  }
   sendShownEvent(win)
 }
 
@@ -52,6 +66,7 @@ function sendShownEvent(win: BrowserWindow): void {
 
 /** renderer 提交/取消完成后调用：隐藏窗口并复位状态机 */
 export function finishCaptureSession(): void {
+  console.log('[听写] 会话结束，隐藏浮窗，', debugCaptureState())
   captureState = 'idle'
   if (captureWindow && !captureWindow.isDestroyed()) {
     captureWindow.hide()
@@ -110,10 +125,18 @@ function getOrCreateCaptureWindow(): BrowserWindow {
 
   // 首次唤起时 renderer 尚未就绪会丢失 SHOWN 事件，加载完成后补发。
   win.webContents.on('did-finish-load', () => {
+    console.log('[听写] 采集窗口加载完成，', debugCaptureState())
     if (captureState === 'active' && !win.isDestroyed()) {
       sendShownEvent(win)
     }
   })
+
+  if (!app.isPackaged) {
+    // dev：把浮窗 renderer 的 console 转发到主进程日志，便于自动化排查。
+    win.webContents.on('console-message', (_event, _level, message) => {
+      console.log('[浮窗]', message)
+    })
+  }
 
   // resize IPC 会动态调整高度；位置保持底部居中。
   win.on('ready-to-show', () => {

@@ -10,6 +10,7 @@ import { join } from 'node:path'
 import { createTray, destroyTray, refreshTrayMenu, type TrayDeps } from './tray'
 import { registerVoiceIpcHandlers, VOICE_APP_IPC_CHANNELS, registerSettingsChangedCallback } from './ipc'
 import { registerVoiceHotkey, unregisterVoiceHotkey } from './shortcuts'
+import { toggleCaptureWindow } from './voice-capture-window'
 import { applyLoginItemSettings, getVoiceAppSettings, getVoiceDictationSettings } from './settings-store'
 import { destroyCaptureWindow } from './voice-capture-window'
 
@@ -118,6 +119,14 @@ async function bootstrap(): Promise<void> {
   // 首次使用（未配置凭证）时主动打开设置窗口，避免用户找不到托盘入口。
   if (!isVoiceConfigured()) {
     showSettingsWindow()
+  }
+
+  // dev 专用调试钩子：kill -USR2 <pid> 模拟按一次全局快捷键，便于自动化验收。
+  if (!app.isPackaged) {
+    process.on('SIGUSR2', () => {
+      console.log('[调试] SIGUSR2 触发听写开关')
+      toggleCaptureWindow()
+    })
   }
 
   app.on('activate', () => showSettingsWindow())
