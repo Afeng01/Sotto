@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["bun"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/renderer/*"],
+      "@sotto/voice": ["./src/voice-dictation/index.ts"],
+      "@sotto/voice/main": ["./src/voice-dictation/main/index.ts"],
+      "@sotto/voice/renderer": ["./src/voice-dictation/renderer/index.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}

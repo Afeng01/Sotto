@@ -1,0 +1,48 @@
+{
+  "name": "sotto",
+  "productName": "Sotto",
+  "version": "0.1.0",
+  "license": "AGPL-3.0-only",
+  "description": "Sotto（呦呦）— 独立常驻的系统级语音输入应用",
+  "main": "dist/main.cjs",
+  "scripts": {
+    "dev:vite": "vite dev",
+    "build:main": "esbuild src/main/index.ts --bundle --platform=node --format=cjs --outfile=dist/main.cjs --external:electron --external:ws --alias:@sotto/voice=./src/voice-dictation/index.ts --alias:@sotto/voice/main=./src/voice-dictation/main/index.ts --alias:@sotto/voice/renderer=./src/voice-dictation/renderer/index.ts",
+    "build:preload": "esbuild src/preload/index.ts --bundle --platform=node --format=cjs --outfile=dist/preload.cjs --external:electron --alias:@sotto/voice=./src/voice-dictation/index.ts",
+    "build:renderer": "vite build",
+    "build": "bun run build:main && bun run build:preload && bun run build:renderer",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "dev": "concurrently -k -n vite,voice -c blue,green \"bun run dev:vite\" \"bun run build && sleep 1.5 && electron .\"",
+    "dist:mac": "bun run build && electron-builder --mac"
+  },
+  "dependencies": {
+    "ws": "8.19.0"
+  },
+  "trustedDependencies": [
+    "electron"
+  ],
+  "devDependencies": {
+    "@types/bun": "^1.2.0",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@types/ws": "^8.5.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "autoprefixer": "^10.4.0",
+    "concurrently": "^9.0.0",
+    "electron": "43.3.0",
+    "electron-builder": "^25.1.8",
+    "esbuild": "^0.25.0",
+    "lucide-react": "^0.475.0",
+    "postcss": "^8.4.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5.0.0",
+    "vite": "^6.3.5"
+  },
+  "build": {
+    "extends": "./electron-builder.yml"
+  }
+}

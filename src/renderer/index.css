@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* shadcn 亮色主题变量（听写浮窗固定亮色，避免深色系统下突兀）。 */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --primary: 243 75% 59%;
+    --primary-foreground: 0 0% 98%;
+    --destructive: 0 84.2% 60.2%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 243 75% 59%;
+    --radius: 0.5rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-transparent text-foreground antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  }
+}
