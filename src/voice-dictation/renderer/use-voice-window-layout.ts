@@ -8,7 +8,12 @@ const WINDOW_HEIGHT_BUFFER = 6
 const LINE_HEIGHT = 28
 const MIN_TRANSCRIPT_HEIGHT = 34
 const MAX_TRANSCRIPT_HEIGHT = 260
+/** 浮窗最大高度：不超过可用屏幕高度的 1/3，长文本只在框内滚动。 */
 const MAX_WINDOW_HEIGHT = 540
+
+function screenMaxWindowHeight(): number {
+  return Math.max(220, Math.min(MAX_WINDOW_HEIGHT, Math.floor(window.screen.availHeight / 3)))
+}
 
 interface VoiceWindowLayoutInput {
   commitResultMessage: string | null
@@ -65,7 +70,7 @@ export function useVoiceWindowLayout(input: VoiceWindowLayoutInput, options: Voi
     const header = headerRef.current
     const hintBar = hintBarRef.current
     const transcriptBox = transcriptBoxRef.current
-    if (!root || !header || !hintBar || !transcriptBox) return
+    if (!root || !header || !transcriptBox) return
 
     const rootStyle = window.getComputedStyle(root)
     const rootVerticalPadding =
@@ -75,13 +80,10 @@ export function useVoiceWindowLayout(input: VoiceWindowLayoutInput, options: Voi
     const fixedHeight = Math.ceil(
       rootVerticalPadding +
       header.getBoundingClientRect().height +
-      hintBar.getBoundingClientRect().height +
+      (hintBar ? hintBar.getBoundingClientRect().height : 0) +
       1,
     )
-    const maxWindowHeight = Math.max(
-      220,
-      Math.min(MAX_WINDOW_HEIGHT, window.screen.availHeight - 24),
-    )
+    const maxWindowHeight = screenMaxWindowHeight()
     const availableTranscriptHeight = Math.max(
       MIN_TRANSCRIPT_HEIGHT,
       maxWindowHeight - fixedHeight - WINDOW_HEIGHT_BUFFER,

@@ -6,8 +6,8 @@
  */
 
 import * as React from 'react'
-import { Check, Clipboard, Loader2, Mic, Square, X } from 'lucide-react'
-import type { VoiceDictationCommitResult, VoiceDictationSettings, VoiceDictationStateEvent } from '@sotto/voice'
+import { Check, Loader2, Mic } from 'lucide-react'
+import type { VoiceDictationSettings, VoiceDictationStateEvent } from '@sotto/voice'
 import { CHUNK_BYTES, concatAudioBuffers, floatTo16BitPcm, splitChunk } from '@sotto/voice/renderer'
 import { mergeVoiceDictationTranscript, type VoiceDictationTranscriptMergeState } from '@sotto/voice/renderer'
 import { useVoiceWindowLayout } from '@sotto/voice/renderer'
@@ -16,7 +16,7 @@ import { resumeAudioContextForCapture } from '@sotto/voice/renderer'
 const MAX_QUEUED_CHUNKS = 60
 const STOP_COMMIT_TIMEOUT_MS = 1400
 const FINAL_COMMIT_DELAY_MS = 180
-const RESULT_VISIBLE_MS = 1200
+const ERROR_VISIBLE_MS = 6000
 
 export function VoiceCaptureApp(): React.ReactElement {
   const [sessionId, setSessionId] = React.useState<string | null>(null)
@@ -24,8 +24,6 @@ export function VoiceCaptureApp(): React.ReactElement {
   const [message, setMessage] = React.useState('等待快捷键唤起')
   const [transcript, setTranscript] = React.useState('')
   const [volume, setVolume] = React.useState(0)
-  const [commitResult, setCommitResult] = React.useState<VoiceDictationCommitResult | null>(null)
-  const [hotkeyLabel, setHotkeyLabel] = React.useState('')
 
   const sessionIdRef = React.useRef<string | null>(null)
   const transcriptTextRef = React.useRef('')
@@ -63,7 +61,7 @@ export function VoiceCaptureApp(): React.ReactElement {
     transcriptBoxRef,
     transcriptMaxHeight,
   } = useVoiceWindowLayout({
-    commitResultMessage: commitResult?.message ?? null,
+    commitResultMessage: null,
     message,
     status,
     transcript,
@@ -84,9 +82,6 @@ export function VoiceCaptureApp(): React.ReactElement {
       .then((settings) => {
         settingsRef.current = settings
       })
-      .catch(console.error)
-    window.voiceAPI.getAppSettings()
-      .then((appConfig) => setHotkeyLabel(appConfig.hotkey ? prettyAccelerator(appConfig.hotkey) : ''))
       .catch(console.error)
   }, [])
 
@@ -163,18 +158,12 @@ export function VoiceCaptureApp(): React.ReactElement {
     setStatus('stopping')
     setMessage('正在输出文本...')
     try {
-      const result = await window.voiceAPI.commitVoiceDictation({ sessionId: asrSessionId ?? '', text })
-      setCommitResult(result)
-      setStatus('completed')
-      setMessage(result.message)
+      await window.voiceAPI.commitVoiceDictation({ sessionId: asrSessionId ?? '', text })
       cleanupAudio()
-      // 让用户短暂看到输出结果（已复制/已写入），再隐藏窗口。
-      setTimeout(() => {
-        void window.voiceAPI.hideVoiceDictation().then(() => {
-          setStatus('idle')
-          setMessage('等待快捷键唤起')
-        }).catch(console.error)
-      }, RESULT_VISIBLE_MS)
+      // 文本已送达光标：立即隐藏，不恋战。
+      await window.voiceAPI.hideVoiceDictation().catch(console.error)
+      setStatus('idle')
+      setMessage('等待快捷键唤起')
     } catch (error) {
       commitInFlightRef.current = false
       const textMessage = error instanceof Error ? error.message : '未知错误'
@@ -224,6 +213,7 @@ export function VoiceCaptureApp(): React.ReactElement {
       window.voiceAPI.cancelVoiceDictation({ sessionId: currentSessionId }).catch(console.error)
     }
   }, [cleanupAudio, discardCurrentTranscript])
+  void cancelAndHide
 
   const abortCurrentSession = React.useCallback((keepWindowVisible = false) => {
     recordingAttemptRef.current += 1
@@ -245,8 +235,12 @@ export function VoiceCaptureApp(): React.ReactElement {
 
   React.useEffect(() => {
     if (status !== 'error') return
-    // 出错时保留浮窗展示原因与操作入口，由用户手动关闭。
+    // 出错时保留浮窗展示原因，几秒后自动收起；没有按钮，全部交给快捷键。
     abortCurrentSession(true)
+    const timer = setTimeout(() => {
+      window.voiceAPI.hideVoiceDictation().catch(console.error)
+    }, ERROR_VISIBLE_MS)
+    return () => clearTimeout(timer)
   }, [abortCurrentSession, status])
 
   const requestMicrophoneStream = React.useCallback(async (): Promise<MediaStream> => {
@@ -375,7 +369,6 @@ export function VoiceCaptureApp(): React.ReactElement {
       currentSessionText: '',
       currentSessionId: '',
     }
-    setCommitResult(null)
     setStatus('connecting')
     setMessage('准备麦克风...')
     const recordingAttempt = ++recordingAttemptRef.current
@@ -554,115 +547,60 @@ export function VoiceCaptureApp(): React.ReactElement {
   const busy = status === 'connecting' || status === 'recording' || status === 'stopping'
 
   return (
-    <div ref={rootRef} className="box-border flex h-screen w-screen flex-col overflow-hidden rounded-xl bg-background px-2 pt-2 pb-1.5">
-      <div ref={panelRef} className="flex min-h-0 w-full flex-col overflow-hidden">
-        <div ref={headerRef} className="flex shrink-0 items-center justify-between px-2 pt-0.5 pb-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <div
-              className={`relative flex size-8 items-center justify-center rounded-full ${status === 'error' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}`}
-            >
-              {status === 'recording' && <span className="absolute inset-0 animate-ping rounded-full bg-primary/20" />}
-              {status === 'connecting' || status === 'stopping'
-                ? <Loader2 className="size-4 animate-spin" />
-                : status === 'completed'
-                  ? <Check className="size-4" />
-                  : status === 'recording'
-                    ? (
-                      <div className="flex items-center gap-[3px] h-4">
-                        {[0.6, 1, 0.75, 0.9, 0.5].map((scale, i) => (
-                          <span
-                            key={i}
-                            className="w-[3px] rounded-full bg-primary transition-all duration-100"
-                            style={{ height: `${Math.max(4, Math.round(volume * scale * 16))}px` }}
-                          />
-                        ))}
-                      </div>
-                    )
-                    : <Mic className="size-4" />}
-            </div>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-foreground">呦呦 Sotto</div>
-              <div className="truncate text-xs text-muted-foreground">{message}</div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1.5">
-            {busy && (
-              <button
-                type="button"
-                className="flex size-8 items-center justify-center rounded-full text-destructive hover:bg-muted"
-                onClick={() => stopRecording().catch(console.error)}
-                aria-label="停止听写"
-              >
-                <Square className="size-3.5" fill="currentColor" strokeWidth={0} />
-              </button>
-            )}
+    <div ref={rootRef} className="box-border flex h-screen w-screen items-end justify-center overflow-hidden px-2 pb-2">
+      <div ref={panelRef} className="w-full overflow-hidden rounded-2xl border border-border/70 bg-popover/95 shadow-2xl backdrop-blur-xl">
+        <div ref={headerRef} className="flex shrink-0 items-center gap-2 px-3.5 pt-2.5 pb-2">
+          {busy ? (
+            status === 'recording' ? (
+              <div className="flex h-4 shrink-0 items-center gap-[3px]">
+                {[0.6, 1, 0.75, 0.9, 0.5].map((scale, i) => (
+                  <span
+                    key={i}
+                    className="w-[3px] rounded-full bg-primary transition-all duration-100"
+                    style={{ height: `${Math.max(4, Math.round(volume * scale * 16))}px` }}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Loader2 className="size-3.5 shrink-0 animate-spin text-primary" />
+            )
+          ) : (
+            <span className={`flex size-4 shrink-0 items-center justify-center ${status === 'error' ? 'text-destructive' : 'text-primary'}`}>
+              {status === 'completed' ? <Check className="size-3.5" /> : <Mic className="size-3.5" />}
+            </span>
+          )}
+          <span className="shrink-0 text-xs font-semibold text-foreground">呦呦</span>
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{message}</span>
+          {status === 'error' && (
             <button
               type="button"
-              className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
-              onClick={cancelAndHide}
-              aria-label="取消听写"
+              onClick={() => window.voiceAPI.openSettings()}
+              className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted"
             >
-              <X className="size-4" />
+              打开设置
             </button>
-          </div>
+          )}
         </div>
-
-        <div className="min-h-0 px-2">
-          <div className="overflow-hidden rounded-lg bg-muted/45">
-            <div ref={hintBarRef} className="flex min-h-8 shrink-0 items-center justify-between gap-3 px-3 py-1.5 text-xs leading-4 text-muted-foreground">
-              <span className="truncate">
-                {status === 'error'
-                  ? '解决后可关闭浮窗重试'
-                  : hotkeyLabel
-                    ? `再按 ${hotkeyLabel} 结束 · 写入光标 · 取消点 ✕`
-                    : '再次按快捷键结束 · 写入光标 · 取消点 ✕'}
+        <div className="mx-3.5 h-px shrink-0 bg-border/60" />
+        <div
+          ref={transcriptBoxRef}
+          className="box-border min-h-[34px] px-3.5 pt-2 pb-3 text-[15px] leading-7 text-foreground [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          style={{
+            maxHeight: transcriptMaxHeight ?? undefined,
+            overflowY: 'auto',
+          }}
+        >
+          <div className="whitespace-pre-wrap break-words overflow-hidden">
+            {transcript || (
+              <span className="text-muted-foreground/60">
+                {status === 'connecting' ? '准备麦克风...' : '请开始说话'}
               </span>
-              {status === 'error' ? (
-                <button
-                  type="button"
-                  onClick={() => window.voiceAPI.openSettings()}
-                  className="shrink-0 rounded-md border border-border px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted"
-                >
-                  打开设置
-                </button>
-              ) : commitResult ? (
-                <span className="flex shrink-0 items-center gap-1.5">
-                  <Clipboard className="size-3.5" />
-                  {commitResult.message}
-                </span>
-              ) : null}
-            </div>
-            <div className="h-px bg-border/70" />
-            <div
-              ref={transcriptBoxRef}
-              className="box-border min-h-[34px] px-3 pt-2.5 pb-2.5 text-[15px] leading-7 text-foreground [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-              style={{
-                maxHeight: transcriptMaxHeight ?? undefined,
-                overflowY: 'auto',
-              }}
-            >
-              <div className="whitespace-pre-wrap break-words overflow-hidden">
-                {transcript || (
-                  <span className="text-muted-foreground/60">
-                    {status === 'connecting' ? '准备麦克风...' : '请开始说话'}
-                  </span>
-                )}
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-function prettyAccelerator(accel: string): string {
-  if (!accel) return ''
-  const sym: Record<string, string> = { Control: '⌃', Alt: '⌥', Shift: '⇧', Super: '⌘' }
-  const parts = accel.split('+')
-  const key = parts.pop() ?? ''
-  return [...parts.map((p) => sym[p] ?? p), key].join(' ')
 }
 
 function isConstraintError(error: unknown): boolean {

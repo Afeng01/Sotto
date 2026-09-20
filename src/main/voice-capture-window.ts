@@ -168,15 +168,16 @@ function positionCaptureWindow(win: BrowserWindow): void {
   })
 }
 
-/** renderer 请求按内容高度调整窗口；保持底部对齐。 */
+/** renderer 请求按内容高度调整窗口；保持底部对齐，高度不超过可用区域的 1/3。 */
 export function resizeCaptureWindow(height: number): void {
   if (!captureWindow || captureWindow.isDestroyed()) return
-  const clamped = Math.max(CAPTURE_MIN_HEIGHT, Math.min(560, Math.round(height)))
-  const bounds = captureWindow.getBounds()
-  if (bounds.height === clamped) return
   const point = screen.getCursorScreenPoint()
   const display = screen.getDisplayNearestPoint(point)
   const { x, y, width, height: workHeight } = display.workArea
+  const screenCap = Math.max(CAPTURE_MIN_HEIGHT, Math.floor((workHeight - CAPTURE_BOTTOM_MARGIN) / 3))
+  const clamped = Math.max(CAPTURE_MIN_HEIGHT, Math.min(560, screenCap, Math.round(height)))
+  const bounds = captureWindow.getBounds()
+  if (bounds.height === clamped) return
   captureWindow.setBounds({
     x: x + Math.round((width - bounds.width) / 2),
     y: y + workHeight - clamped - CAPTURE_BOTTOM_MARGIN,
