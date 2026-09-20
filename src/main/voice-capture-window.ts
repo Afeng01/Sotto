@@ -98,7 +98,8 @@ function getCaptureWindowOptions(): BrowserWindowConstructorOptions {
     maximizable: false,
     fullscreenable: false,
     show: false,
-    hasShadow: true,
+    // 原生阴影在透明窗口 + 圆角卡片下会算出硬边轮廓线；阴影交给 CSS 画。
+    hasShadow: false,
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
       contextIsolation: true,
