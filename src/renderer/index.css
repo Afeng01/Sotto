@@ -6,6 +6,9 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
+    /* 浮窗底色：带浅蓝色温的米白，比纯白柔和 */
+    --popover: 210 45% 97%;
+    --popover-foreground: 240 10% 3.9%;
     --foreground: 240 10% 3.9%;
     --muted: 240 4.8% 95.9%;
     --muted-foreground: 240 3.8% 46.1%;

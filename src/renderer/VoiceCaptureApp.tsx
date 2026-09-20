@@ -548,7 +548,7 @@ export function VoiceCaptureApp(): React.ReactElement {
 
   return (
     <div ref={rootRef} className="box-border flex h-screen w-screen items-end justify-center overflow-hidden px-3 pb-3">
-      <div ref={panelRef} className="w-full overflow-hidden rounded-2xl border border-border/70 bg-popover/95 shadow-lg backdrop-blur-xl">
+      <div ref={panelRef} className="w-full overflow-hidden rounded-2xl border border-border/70 bg-popover shadow-lg">
         <div ref={headerRef} className="flex shrink-0 items-center gap-2 px-3.5 pt-1.5 pb-1.5">
           {busy ? (
             status === 'recording' ? (
