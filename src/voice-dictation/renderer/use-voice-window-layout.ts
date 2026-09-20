@@ -7,12 +7,11 @@ import * as React from 'react'
 const WINDOW_HEIGHT_BUFFER = 6
 const LINE_HEIGHT = 28
 const MIN_TRANSCRIPT_HEIGHT = 34
-const MAX_TRANSCRIPT_HEIGHT = 260
-/** 浮窗最大高度：不超过可用屏幕高度的 1/3，长文本只在框内滚动。 */
-const MAX_WINDOW_HEIGHT = 540
+/** 浮窗总高度预算：约 4 行文字，头部行也计在内，超出部分不出现。 */
+const POPOVER_MAX_TOTAL_LINES = 4
 
 function screenMaxWindowHeight(): number {
-  return Math.max(220, Math.min(MAX_WINDOW_HEIGHT, Math.floor(window.screen.availHeight / 3)))
+  return Math.max(220, Math.floor(window.screen.availHeight / 3))
 }
 
 interface VoiceWindowLayoutInput {
@@ -83,12 +82,18 @@ export function useVoiceWindowLayout(input: VoiceWindowLayoutInput, options: Voi
       (hintBar ? hintBar.getBoundingClientRect().height : 0) +
       1,
     )
-    const maxWindowHeight = screenMaxWindowHeight()
+    const maxWindowHeight = Math.max(
+      MIN_TRANSCRIPT_HEIGHT + fixedHeight,
+      Math.min(
+        screenMaxWindowHeight(),
+        fixedHeight + POPOVER_MAX_TOTAL_LINES * LINE_HEIGHT,
+      ),
+    )
     const availableTranscriptHeight = Math.max(
       MIN_TRANSCRIPT_HEIGHT,
       maxWindowHeight - fixedHeight - WINDOW_HEIGHT_BUFFER,
     )
-    const viewportMaxTranscriptHeight = Math.min(MAX_TRANSCRIPT_HEIGHT, availableTranscriptHeight)
+    const viewportMaxTranscriptHeight = availableTranscriptHeight
     const nextTranscriptMaxHeight =
       transcriptNaturalHeight > viewportMaxTranscriptHeight
         ? viewportMaxTranscriptHeight
