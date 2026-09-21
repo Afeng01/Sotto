@@ -26,8 +26,10 @@ import {
 import type { VoiceDictationSettings } from '@sotto/voice'
 import type { HistoryEntry, VoiceAppSettings } from './voice-api'
 
-const VOLCENGINE_SPEECH_SERVICE_URL = 'https://console.volcengine.com/speech/service/'
-const APP_VERSION = '0.1.0'
+declare const __APP_VERSION__: string
+
+const VOLCENGINE_SPEECH_SERVICE_URL = 'https://console.volcengine.com/speech/new/setting/activate'
+const APP_VERSION = __APP_VERSION__
 
 const ENDPOINT_OPTIONS = [
   { value: 'async', label: '双向流式优化版' },
@@ -362,21 +364,25 @@ export function SettingsApp(): React.ReactElement {
                 <div className="mb-6 rounded-lg border border-primary/15 bg-primary/5 px-4 py-3.5 text-xs leading-5 text-muted-foreground">
                   <div className="mb-1.5 flex items-center gap-1.5 font-medium text-foreground">
                     <Mic className="size-3.5 text-primary" />
-                    自配豆包凭证
+                    配置指南（新版控制台，约 2 分钟）
                   </div>
-                  <p>
-                    打开
-                    <button
-                      type="button"
-                      onClick={() => void window.voiceAPI.openExternal(VOLCENGINE_SPEECH_SERVICE_URL)}
-                      className="mx-1 text-primary underline underline-offset-4 hover:opacity-80"
-                    >
-                      火山引擎语音服务控制台
-                    </button>
-                    ，选择旧版服务界面。
-                  </p>
-                  <p>找到“豆包流式语音识别模型 2.0”类目，选择已申请对应权限的应用。</p>
-                  <p>推荐填写新版控制台的 API Key（只需这一项），再填 Resource ID，然后点击“测试连接”。</p>
+                  <ol className="list-decimal space-y-0.5 pl-4">
+                    <li>
+                      打开
+                      <button
+                        type="button"
+                        onClick={() => void window.voiceAPI.openExternal(VOLCENGINE_SPEECH_SERVICE_URL)}
+                        className="mx-1 text-primary underline underline-offset-4 hover:opacity-80"
+                      >
+                        火山引擎控制台 - 开通管理
+                      </button>
+                      ，开通「流式语音识别 2.0」（赠送 20 小时免费额度）。
+                    </li>
+                    <li>左侧菜单点「API Key」，创建并复制一个 API Key。</li>
+                    <li>下面「凭证方式」选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。</li>
+                    <li>点「测试连接」，显示成功就绪。</li>
+                  </ol>
+                  <p className="mt-1.5">如果你还在用旧版控制台（有 APP ID 和 Access Token），把凭证方式切到「旧版控制台」填写即可。</p>
                 </div>
 
                 <Section title="豆包流式语音输入">
@@ -386,32 +392,60 @@ export function SettingsApp(): React.ReactElement {
                     control={<Toggle checked={settings.enabled} onChange={() => void saveVoice({ enabled: !settings.enabled })} />}
                   />
 
-                  <label className="block">
-                    <Hint>API Key — 新版控制台推荐方式，对应 X-Api-Key 请求头，只需这一个即可；保存时会加密。</Hint>
-                    <div className="relative">
-                      <input
-                        type={showSecret ? 'text' : 'password'}
-                        value={settings.apiKey}
-                        onChange={(event) => setSettings({ ...settings, apiKey: event.target.value })}
-                        onBlur={(event) => void saveVoice({ apiKey: event.target.value.trim() })}
-                        placeholder="请输入新版控制台 API Key"
-                        className={`${inputClass} pr-9`}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSecret((v) => !v)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        aria-label={showSecret ? '隐藏' : '显示'}
-                      >
-                        {showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                      </button>
-                    </div>
-                  </label>
+                  <InlineField
+                    label="凭证方式"
+                    hint="新版控制台只需要一个 API Key；旧版需要 APP ID + Access Token。"
+                    control={
+                      <div className="flex overflow-hidden rounded-lg border border-border">
+                        {([
+                          { value: 'api-key', label: '新版控制台' },
+                          { value: 'legacy', label: '旧版控制台' },
+                        ] as const).map((option) => (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => void saveVoice({ credentialMode: option.value })}
+                            className={`px-3 py-1 text-xs transition-colors ${
+                              settings.credentialMode === option.value
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    }
+                  />
 
-                  <div className="rounded-lg border border-dashed border-border/70 p-3">
-                    <p className="mb-2 text-xs text-muted-foreground">旧版控制台凭证（二选一，已填 API Key 可忽略）</p>
+                  {settings.credentialMode !== 'legacy' ? (
                     <label className="block">
-                    <Hint>豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。</Hint>
+                      <Hint>API Key — 对应 X-Api-Key 请求头，只需这一项；保存时会加密。</Hint>
+                      <div className="relative">
+                        <input
+                          type={showSecret ? 'text' : 'password'}
+                          value={settings.apiKey}
+                          onChange={(event) => setSettings({ ...settings, apiKey: event.target.value })}
+                          onBlur={(event) => void saveVoice({ apiKey: event.target.value.trim() })}
+                          placeholder="请输入新版控制台 API Key"
+                          className={`${inputClass} pr-9`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSecret((v) => !v)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label={showSecret ? '隐藏' : '显示'}
+                        >
+                          {showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        </button>
+                      </div>
+                    </label>
+                  ) : (
+                    <>
+                    <div className="rounded-lg border border-dashed border-border/70 p-3">
+                      <p className="mb-2 text-xs text-muted-foreground">旧版控制台凭证</p>
+                      <label className="block">
+                        <Hint>豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。</Hint>
                     <input
                       type="text"
                       value={settings.appId}
@@ -443,7 +477,9 @@ export function SettingsApp(): React.ReactElement {
                       </button>
                     </div>
                   </label>
-                  </div>
+                    </div>
+                    </>
+                  )}
 
                   <label className="block">
                     <Hint>Resource ID — 小时版填 volc.seedasr.sauc.duration，并发版填 volc.seedasr.sauc.concurrent。</Hint>

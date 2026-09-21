@@ -34,8 +34,10 @@ export interface VoiceDictationSettings {
   appId: string
   /** 豆包 Access Token，对应 X-Api-Access-Key 请求头（旧版控制台鉴权） */
   accessToken: string
-  /** 新版控制台 API Key，对应 X-Api-Key 请求头；填写后优先于 APP ID + Access Token */
+  /** 新版控制台 API Key，对应 X-Api-Key 请求头；凭证方式为 api-key 时使用 */
   apiKey: string
+  /** 凭证方式：api-key = 新版控制台（推荐），legacy = 旧版控制台 APP ID + Access Token */
+  credentialMode: 'api-key' | 'legacy'
   /** 豆包 Resource ID */
   resourceId: string
   /** 语言，空字符串表示自动 */

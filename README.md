@@ -10,7 +10,15 @@
 - **菜单栏常驻**：无 Dock 图标，托盘直达设置
 - **开机自启**：可在设置中开启
 - **豆包流式 ASR**：火山引擎豆包语音识别，支持自定义热词、连接模式、识别语言
-- **凭证加密存储**：Access Token 通过 macOS Keychain（safeStorage）加密后落盘
+- **凭证加密存储**：API Key / Access Token 通过 macOS Keychain（safeStorage）加密后落盘
+
+## 安装提示（未签名版本）
+
+应用未做 Apple 开发者签名/公证，经微信、网盘等渠道传输后首次打开会提示「“Sotto”已损坏，无法打开」。在终端执行以下命令后即可正常打开：
+
+```bash
+sudo xattr -rd com.apple.quarantine /Applications/Sotto.app
+```
 
 ## 开发
 

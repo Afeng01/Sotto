@@ -297,13 +297,16 @@ function parseServerMessage(data: Buffer): ParsedServerMessage | null {
   return parseServerPayload(parsed, flags === FLAG_SERVER_LAST_SEQUENCE)
 }
 
-/** 豆包 ASR 鉴权：新版控制台填了 API Key 则用 X-Api-Key，否则回退旧版 APP ID + Access Token */
+/** 豆包 ASR 鉴权：凭证方式选择新版（X-Api-Key）或旧版（APP ID + Access Token） */
 function buildAuthHeaders(settings: VoiceDictationSettings): Record<string, string> {
   const base: Record<string, string> = {
     'X-Api-Resource-Id': settings.resourceId,
     'X-Api-Connect-Id': randomUUID(),
   }
-  if (settings.apiKey) {
+  const useLegacy = settings.credentialMode === 'legacy'
+    ? true
+    : !(settings.apiKey) && Boolean(settings.appId && settings.accessToken)
+  if (!useLegacy) {
     return { ...base, 'X-Api-Key': settings.apiKey }
   }
   return { ...base, 'X-Api-App-Key': settings.appId, 'X-Api-Access-Key': settings.accessToken }

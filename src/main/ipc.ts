@@ -49,6 +49,7 @@ function registerVoiceDictationHandlers(): void {
       if (typeof updates.appId === 'string') safeUpdates.appId = updates.appId.slice(0, 256)
       if (typeof updates.accessToken === 'string') safeUpdates.accessToken = updates.accessToken.slice(0, 4096)
       if (typeof updates.apiKey === 'string') safeUpdates.apiKey = updates.apiKey.slice(0, 4096)
+      if (updates.credentialMode === 'api-key' || updates.credentialMode === 'legacy') safeUpdates.credentialMode = updates.credentialMode
       if (typeof updates.resourceId === 'string') safeUpdates.resourceId = updates.resourceId.slice(0, 256)
       if (typeof updates.language === 'string') safeUpdates.language = updates.language.slice(0, 64)
       if (updates.endpointMode === 'async' || updates.endpointMode === 'duplex') safeUpdates.endpointMode = updates.endpointMode

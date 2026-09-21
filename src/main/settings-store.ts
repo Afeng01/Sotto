@@ -40,6 +40,7 @@ const DEFAULT_VOICE_DICTATION_SETTINGS: VoiceDictationSettings = {
   appId: '',
   accessToken: '',
   apiKey: '',
+  credentialMode: 'api-key',
   resourceId: 'volc.seedasr.sauc.duration',
   language: '',
   endpointMode: 'async',
@@ -127,12 +128,14 @@ function decryptSecret(value: string): string {
 export function getVoiceDictationSettings(): VoiceDictationSettings {
   const raw = loadPersisted().voiceDictation ?? {}
   const encryptedAccessToken = raw.accessToken ?? raw.accessKey ?? ''
+  const credentialMode = raw.credentialMode ?? (raw.apiKey ? 'api-key' : 'legacy')
   return {
     ...DEFAULT_VOICE_DICTATION_SETTINGS,
     ...raw,
     appId: raw.appId ?? raw.appKey ?? '',
     accessToken: decryptSecret(encryptedAccessToken),
     apiKey: decryptSecret(raw.apiKey ?? ''),
+    credentialMode: credentialMode === 'legacy' ? 'legacy' : 'api-key',
     customHotwords: typeof raw.customHotwords === 'string' ? raw.customHotwords : '',
     enabled: raw.enabled !== false,
   }
