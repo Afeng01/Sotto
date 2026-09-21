@@ -1,0 +1,410 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.Sotto-arm64-apple-macosx16.0-debug.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/sources",
+      "importPath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "Sotto",
+      "moduleOutputPath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Modules/Sotto.swiftmodule",
+      "objects" : [
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/AudioCapture.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/CapturePanel.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DictationCoordinator.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DoubaoAsrClient.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/SettingsStore.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TextInsertion.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TranscriptMerger.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx13.0",
+        "-enable-batch-mode",
+        "-index-store-path",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/index/store",
+        "-Onone",
+        "-enable-testing",
+        "-j10",
+        "-DSWIFT_PACKAGE",
+        "-DDEBUG",
+        "-Xcc",
+        "-fmodule-map-file=/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/CZlib/include/module.modulemap",
+        "-Xcc",
+        "-I",
+        "-Xcc",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/CZlib/include",
+        "-module-cache-path",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "Sotto_main",
+        "-swift-version",
+        "5",
+        "-F",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "native"
+      ],
+      "outputFileMapPath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/AudioCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/CapturePanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DictationCoordinator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DoubaoAsrClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/SettingsStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TextInsertion.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TranscriptMerger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Modules/Sotto.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/main.swift"
+      ],
+      "tempsPath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build",
+      "wholeModuleOptimization" : false
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "Sotto" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "Sotto",
+      "-package-name",
+      "native",
+      "-incremental",
+      "-c",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/main.swift",
+      "-I",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Modules",
+      "-target",
+      "arm64-apple-macosx13.0",
+      "-enable-batch-mode",
+      "-index-store-path",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/index/store",
+      "-Onone",
+      "-enable-testing",
+      "-j10",
+      "-DSWIFT_PACKAGE",
+      "-DDEBUG",
+      "-Xcc",
+      "-fmodule-map-file=/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/CZlib/include/module.modulemap",
+      "-Xcc",
+      "-I",
+      "-Xcc",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/CZlib/include",
+      "-module-cache-path",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "Sotto_main",
+      "-swift-version",
+      "5",
+      "-F",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "native",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "CZlib" : [
+
+    ],
+    "Sotto" : [
+      "CZlib"
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "enableAllTraits" : false
+  },
+  "writeCommands" : {
+    "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto-entitlement.plist" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<entitlement-plist>"
+        },
+        {
+          "kind" : "virtual",
+          "name" : "<com.apple.security.get-task-allow>"
+        }
+      ],
+      "outputFilePath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto-entitlement.plist"
+    },
+    "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/sources"
+    },
+    "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/AudioCapture.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/CapturePanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DictationCoordinator.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DoubaoAsrClient.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/SettingsStore.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TextInsertion.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/TranscriptMerger.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.product/Objects.LinkFileList"
+    },
+    "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/swift-version--1AB21518FC5DEDBE.txt"
+    }
+  }
+}
