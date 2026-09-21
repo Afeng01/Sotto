@@ -358,8 +358,8 @@ private struct SottoTextField: View {
         }
         .textFieldStyle(.plain)
         .font(.system(size: 13))
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1))
         .overlay(alignment: .trailing) {
@@ -432,12 +432,12 @@ private struct SottoToggle: View {
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(checked ? Color.sottoPrimary : Color.sottoBorder)
-                    .frame(width: 36, height: 20)
+                    .frame(width: 32, height: 18)
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 16, height: 16)
+                    .frame(width: 14, height: 14)
                     .shadow(radius: 1)
-                    .offset(x: checked ? 18 : 2)
+                    .offset(x: checked ? 16 : 2)
             }
         }
         .buttonStyle(.plain)
@@ -460,7 +460,7 @@ struct SettingsView: View {
                 content
             }
         }
-        .frame(width: 760, height: 640)
+        .frame(width: 760, height: 600)
         .background(Color.white)
     }
 
@@ -481,9 +481,9 @@ struct SettingsView: View {
             }
             Spacer()
         }
-        .padding(.leading, 84) // 避开交通灯
+        .padding(.leading, 80) // 避开交通灯
         .padding(.trailing, 24)
-        .frame(height: 48)
+        .frame(height: 44)
     }
 
     private var sidebar: some View {
@@ -492,13 +492,13 @@ struct SettingsView: View {
                 Button(action: { page = item }) {
                     HStack(spacing: 10) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 13))
+                            .font(.system(size: 12))
                             .frame(width: 16)
                         Text(item.label).font(.system(size: 13))
                         Spacer()
                     }
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 5)
                     .background(RoundedRectangle(cornerRadius: 6).fill(page == item ? Color.sottoPrimary.opacity(0.1) : Color.clear))
                     .foregroundColor(page == item ? Color.sottoPrimary : Color.sottoMutedText)
                     .contentShape(Rectangle())
@@ -508,7 +508,8 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 12)
+        .padding(.top, 10)
+        .padding(.bottom, 12)
         .frame(width: 176, alignment: .top)
     }
 
@@ -524,10 +525,10 @@ struct SettingsView: View {
                 case .about: aboutPage
                 }
             }
-            .padding(.horizontal, 28)
-            .padding(.top, 24)
-            .padding(.bottom, 40)
-            .frame(maxWidth: 520, alignment: .leading)
+            .padding(.horizontal, 24)
+            .padding(.top, 16)
+            .padding(.bottom, 32)
+            .frame(maxWidth: 560, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
     }
@@ -665,32 +666,32 @@ struct SettingsView: View {
     }
 
     private var guideCard: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Label("配置指南（新版控制台，约 2 分钟）", systemImage: "mic.fill")
-                .font(.system(size: 12, weight: .medium))
+                .font(.system(size: 11, weight: .medium))
                 .foregroundColor(.primary)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
-                    Text("1. 打开 ").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    Text("1. 打开 ").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
                     Button("火山引擎控制台 - 开通管理") { model.openVolcengineConsole() }
                         .font(.system(size: 12))
                         .buttonStyle(.plain)
                         .foregroundColor(Color.sottoPrimary)
                         .underline()
-                    Text("，开通「流式语音识别 2.0」（赠送 20 小时免费额度）。").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    Text("，开通「流式语音识别 2.0」（赠送 20 小时免费额度）。").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
                 }
                 Text("2. 左侧菜单点「API Key」，创建并复制一个 API Key。")
-                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
                 Text("3. 下面「凭证方式」选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。")
-                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
                 Text("4. 点「测试连接」，显示成功就绪。")
-                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
             }
             Text("如果你还在用旧版控制台（有 APP ID 和 Access Token），把凭证方式切到「旧版控制台」填写即可。")
-                .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.sottoPrimary.opacity(0.05)))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoPrimary.opacity(0.15), lineWidth: 1))
@@ -736,7 +737,7 @@ struct SettingsView: View {
             } else {
                 HStack {
                     Spacer()
-                    Text("加载中...").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                    Text("加载中...").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
                     Spacer()
                 }.padding(.vertical, 56)
             }
@@ -1004,7 +1005,7 @@ final class SettingsPanel {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 640),
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 600),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
