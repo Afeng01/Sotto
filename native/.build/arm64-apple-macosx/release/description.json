@@ -32,6 +32,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DesignTokens.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift"
         },
         {
@@ -85,6 +89,7 @@
       "objects" : [
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/AudioCapture.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DoubaoAsrClient.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Gzip.swift.o",
@@ -145,6 +150,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator.swift.o"
         },
         {
@@ -192,6 +201,7 @@
       "sources" : [
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DesignTokens.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
@@ -223,6 +233,7 @@
       "-c",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DesignTokens.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
@@ -309,6 +320,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DesignTokens.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift"
         },
         {
@@ -364,6 +379,10 @@
         {
           "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens.swift.o"
         },
         {
           "kind" : "file",

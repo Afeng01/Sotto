@@ -330,16 +330,6 @@ final class SettingsModel: ObservableObject {
     }
 }
 
-// MARK: - 设计令牌（对齐 Electron 版 index.css）
-
-private extension Color {
-    static let sottoPrimary = Color(red: 0.314, green: 0.282, blue: 0.898)      // hsl(243 75% 59%)
-    static let sottoBorder = Color(red: 0.894, green: 0.894, blue: 0.906)       // hsl(240 5.9% 90%)
-    static let sottoMutedText = Color(red: 0.435, green: 0.435, blue: 0.451)    // hsl(240 3.8% 46.1%)
-    static let sottoMutedBg = Color(red: 0.957, green: 0.957, blue: 0.961)      // hsl(240 4.8% 95.9%)
-    static let sottoDestructive = Color(red: 0.898, green: 0.278, blue: 0.322)  // hsl(0 84.2% 60.2%)
-}
-
 // MARK: - 基础组件
 
 private struct SottoTextField: View {
@@ -558,8 +548,17 @@ struct SettingsView: View {
                             legacyCredentials
                         } else {
                             StackedField(hint: "API Key — 对应 X-Api-Key 请求头，只需这一项。") {
-                                AnyView(SottoTextField(text: $model.apiKey, placeholder: "请输入新版控制台 API Key", secure: true)
-                                    .onChange(of: model.apiKey) { _ in model.scheduleVoiceSave() })
+                                AnyView(
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        SottoTextField(text: $model.apiKey, placeholder: "请输入新版控制台 API Key", secure: true)
+                                            .onChange(of: model.apiKey) { _ in model.scheduleVoiceSave() }
+                                        if SottoSettings.looksLikeCiphertext(model.apiKey) {
+                                            Text("检测到这是 Electron 版加密后的密文，原生版无法使用——请删除后重新粘贴明文 API Key")
+                                                .font(.system(size: 11))
+                                                .foregroundColor(Color.sottoDestructive)
+                                        }
+                                    }
+                                )
                             }
                         }
 

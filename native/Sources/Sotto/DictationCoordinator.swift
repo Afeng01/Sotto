@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import AVFoundation
 
 /// 听写会话状态机（对齐 voice-capture-window.ts 的 idle/active/stopping）
 @MainActor
@@ -43,10 +44,15 @@ final class DictationCoordinator {
             showPanelError("请先在设置中填写豆包 ASR 凭证")
             return
         }
+        if !settings.effectiveLegacy && SottoSettings.looksLikeCiphertext(settings.apiKey) {
+            showPanelError("API Key 还是 Electron 版的加密密文，请在设置里重新粘贴明文 API Key")
+            return
+        }
 
         state = .active
         sessionId = UUID().uuidString
         mergeState = TranscriptMergeState()
+        panel.statusIsError = false
         panel.status = "正在连接豆包 ASR..."
         panel.transcript = ""
         panel.show()
@@ -55,6 +61,7 @@ final class DictationCoordinator {
         self.client = client
         client.onConnected = { [weak self] in
             guard let self, self.state == .active else { return }
+            self.panel.statusIsError = false
             self.panel.status = ""
             self.startCapture()
         }
@@ -74,6 +81,27 @@ final class DictationCoordinator {
     }
 
     private func startCapture() {
+        // 麦克风权限：未决定则现场询问，被拒绝则给可行动提示
+        switch AVCaptureDevice.authorizationStatus(for: .audio) {
+        case .authorized:
+            doStartCapture()
+        case .notDetermined:
+            panel.status = "等待麦克风权限…"
+            AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
+                DispatchQueue.main.async {
+                    if granted {
+                        self?.doStartCapture()
+                    } else {
+                        self?.showPanelError("麦克风权限被拒绝，请到系统设置 → 隐私与安全性 → 麦克风 中允许呦呦")
+                    }
+                }
+            }
+        default:
+            showPanelError("麦克风权限未授权，请到系统设置 → 隐私与安全性 → 麦克风 中允许呦呦")
+        }
+    }
+
+    private func doStartCapture() {
         let capture = AudioCapture()
         self.capture = capture
         capture.onChunk = { [weak self] chunk in
@@ -81,7 +109,9 @@ final class DictationCoordinator {
         }
         do {
             try capture.start()
+            print("[音频] 采集已启动")
         } catch {
+            print("[音频] 启动失败:", error)
             showPanelError("麦克风启动失败: \(error.localizedDescription)")
         }
     }
@@ -94,6 +124,9 @@ final class DictationCoordinator {
         let result = TranscriptMerger.merge(mergeState, text, isFinal: isFinal, sessionId: sessionId)
         mergeState = result.state
         panel.transcript = result.text
+        if isFinal {
+            print("[转写] 收到最终片段: \(text.prefix(30))")
+        }
     }
 
     private func stop() {
@@ -145,6 +178,7 @@ final class DictationCoordinator {
 
     private func showPanelError(_ message: String) {
         state = .idle
+        panel.statusIsError = true
         panel.status = message
         panel.transcript = ""
         panel.show()

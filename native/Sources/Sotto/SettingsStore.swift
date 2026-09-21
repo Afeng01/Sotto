@@ -18,6 +18,12 @@ struct SottoSettings {
     var hotkey: String = "Control+`"
     var launchAtLogin: Bool = false
 
+    /// Electron safeStorage v10 密文检测：base64 解码后以 "v10" 开头
+    static func looksLikeCiphertext(_ value: String) -> Bool {
+        guard !value.isEmpty, let data = Data(base64Encoded: value) else { return false }
+        return data.prefix(3) == Data("v10".utf8)
+    }
+
     var effectiveLegacy: Bool {
         if credentialMode == "legacy" { return true }
         if apiKey.isEmpty && !appId.isEmpty && !accessToken.isEmpty { return true }

@@ -14,6 +14,11 @@
     "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel~partial.swiftmodule",
     "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel.swiftdeps"
   },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DesignTokens.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DesignTokens.swiftdeps"
+  },
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift": {
     "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator.swift.o",
     "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator~partial.swiftmodule",

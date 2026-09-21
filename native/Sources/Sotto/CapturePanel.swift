@@ -1,29 +1,19 @@
 import AppKit
 import SwiftUI
 
-/// 听写浮窗：非聚焦 NSPanel，底部居中，实时显示转写文本。
+/// 听写浮窗：非聚焦 NSPanel，屏幕底部居中，绝不抢走目标应用焦点。
 @MainActor
 final class CapturePanel {
     private static let width: CGFloat = 380
-    private static let minHeight: CGFloat = 110
+    private static let minHeight: CGFloat = 96
     private static let maxHeight: CGFloat = 240
     private static let bottomMargin: CGFloat = 28
 
     private var panel: NSPanel?
     private let viewModel = TranscriptViewModel()
 
-    var onClose: (() -> Void)?
-
     init() {
-        viewModel.onCommit = { [weak self] text in
-            guard !text.isEmpty else {
-                self?.hide()
-                return
-            }
-            let result = TextInsertion.pasteAtCursor(text)
-            if !result.success {
-                print("[听写] \(result.message)")
-            }
+        viewModel.onCommit = { [weak self] _ in
             self?.hide()
         }
     }
@@ -36,6 +26,11 @@ final class CapturePanel {
     var status: String {
         get { viewModel.status }
         set { viewModel.status = newValue }
+    }
+
+    var statusIsError: Bool {
+        get { viewModel.statusIsError }
+        set { viewModel.statusIsError = newValue }
     }
 
     func show() {
@@ -56,17 +51,15 @@ final class CapturePanel {
             panel.hasShadow = false
             panel.isMovable = false
             panel.hidesOnDeactivate = false
+            panel.worksWhenModal = true
             let hosting = NSHostingView(rootView: TranscriptPopoverView(viewModel: viewModel))
             panel.contentView = hosting
             self.panel = panel
         }
 
         position(panel)
-        panel.alphaValue = 0
+        // 只展示，不激活、不设为 key：目标应用的焦点和光标保持不动
         panel.orderFrontRegardless()
-        panel.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: false)
-        panel.alphaValue = 1
     }
 
     func commit() {
@@ -89,7 +82,7 @@ final class CapturePanel {
 
     private func desiredSize() -> NSSize {
         let lines = max(1, viewModel.text.split(separator: "\n", omittingEmptySubsequences: false).count)
-        let height = min(Self.maxHeight, max(Self.minHeight, CGFloat(lines) * 24 + 40))
+        let height = min(Self.maxHeight, max(Self.minHeight, CGFloat(lines) * 24 + 56))
         return NSSize(width: Self.width, height: height)
     }
 }
@@ -98,38 +91,54 @@ final class CapturePanel {
 final class TranscriptViewModel: ObservableObject {
     @Published var text = ""
     @Published var status = ""
+    @Published var statusIsError = false
 
     var onCommit: ((String) -> Void)?
 }
 
+/// 浮窗视觉（对齐 Electron 版：浅蓝米白底 210 45% 97%、圆角卡片、描边、柔和阴影）
 struct TranscriptPopoverView: View {
     @ObservedObject var viewModel: TranscriptViewModel
 
+    static let popoverBg = Color(red: 0.957, green: 0.969, blue: 0.984) // hsl(210 45% 97%)
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             if !viewModel.status.isEmpty {
-                Text(viewModel.status)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(viewModel.statusIsError ? Color.red : Color.sottoPrimary)
+                        .frame(width: 6, height: 6)
+                    Text(viewModel.status)
+                        .font(.system(size: 11))
+                        .foregroundColor(viewModel.statusIsError ? Color.sottoDestructive : Color.sottoMutedText)
+                }
             }
-            ScrollView(.vertical, showsIndicators: false) {
-                Text(viewModel.text.isEmpty ? "正在听写…" : viewModel.text)
-                    .font(.system(size: 15))
-                    .foregroundColor(viewModel.text.isEmpty ? .secondary : .primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(alignment: .top, spacing: 0) {
+                if viewModel.text.isEmpty {
+                    Text("正在听写…")
+                        .font(.system(size: 15))
+                        .foregroundColor(Color.sottoMutedText)
+                } else {
+                    Text(viewModel.text)
+                        .font(.system(size: 15))
+                        .foregroundColor(.primary)
+                }
+                Spacer(minLength: 0)
             }
         }
-        .padding(14)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(nsColor: NSColor.windowBackgroundColor))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Self.popoverBg)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(Color.black.opacity(0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(Color.sottoBorder, lineWidth: 1)
         )
-        .shadow(color: .black.opacity(0.18), radius: 12, y: 4)
-        .padding(10)
+        .shadow(color: .black.opacity(0.16), radius: 10, y: 3)
+        .padding(8)
     }
 }
