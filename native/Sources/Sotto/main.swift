@@ -19,6 +19,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let settings = SottoSettings.load()
         coordinator = DictationCoordinator(settings: settings)
 
+        // `open Sotto.app --args settings`：启动即打开设置窗（调试用）
+        if ProcessInfo.processInfo.arguments.contains("settings") {
+            settingsPanel.show()
+        }
+
         let hotkey = HotkeyCenter()
         HotkeyCenter.onToggle = { [weak coordinator] in
             coordinator?.toggle()
