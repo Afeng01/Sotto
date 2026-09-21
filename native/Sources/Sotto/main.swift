@@ -11,6 +11,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var coordinator: DictationCoordinator?
     private var statusItem: NSStatusItem?
+    private var hotkeyCenter: HotkeyCenter?
     private let settingsPanel = SettingsPanel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -24,13 +25,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             settingsPanel.show()
         }
 
-        let hotkey = HotkeyCenter()
+        let hotkeyCenter = HotkeyCenter()
+        self.hotkeyCenter = hotkeyCenter
         HotkeyCenter.onToggle = { [weak coordinator] in
             coordinator?.toggle()
         }
-        let hotkeyOk = hotkey.register()
+        let hotkeyOk = hotkeyCenter.register(accelerator: settings.hotkey.isEmpty ? nil : settings.hotkey)
         if !hotkeyOk {
-            print("[启动] 全局快捷键注册失败（可能被占用）")
+            print("[启动] 全局快捷键注册失败（可能被占用）：\(settings.hotkey)")
+        }
+        // 设置页改快捷键后重新注册
+        NotificationCenter.default.addObserver(forName: SettingsModel.hotkeyChangedNotification, object: nil, queue: .main) { [weak self] _ in
+            let current = SottoSettings.load()
+            let ok = self?.hotkeyCenter?.register(accelerator: current.hotkey.isEmpty ? nil : current.hotkey) ?? false
+            print("[快捷键] 重新注册 \(current.hotkey) → \(ok ? "成功" : "失败")")
         }
 
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)

@@ -14,7 +14,7 @@ final class DictationCoordinator {
     private var sessionId = ""
     private var stopDeadline: DispatchWorkItem?
 
-    private let settings: SottoSettings
+    private var settings: SottoSettings
 
     init(settings: SottoSettings) {
         self.settings = settings
@@ -27,11 +27,14 @@ final class DictationCoordinator {
         case .active:
             stop()
         case .idle:
+            // 每次开听重新加载设置：设置页改动即时生效，无需重启
             start()
         }
     }
 
     private func start() {
+        let settings = SottoSettings.load()
+        self.settings = settings
         guard settings.enabled else {
             showPanelError("听写未开启，请在呦呦设置中启用")
             return
@@ -124,10 +127,20 @@ final class DictationCoordinator {
             panel.hide()
             return
         }
-        // CapturePanel.onCommit 负责粘贴 + 隐藏面板
-        panel.transcript = text
-        panel.commit()
-        state = .idle
+        // 输出走统一入口：按输出方式写光标/剪贴板，并记录历史
+        HistoryStore.add(text: text, mode: settings.outputMode == "clipboard" ? "clipboard" : "cursor")
+        if settings.outputMode == "clipboard" {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+            print("[听写] 已复制到剪贴板")
+            state = .idle
+            panel.hide()
+        } else {
+            panel.transcript = text
+            panel.commit()
+            state = .idle
+        }
     }
 
     private func showPanelError(_ message: String) {

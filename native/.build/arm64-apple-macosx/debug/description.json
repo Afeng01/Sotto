@@ -44,6 +44,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift"
         },
         {
@@ -84,6 +88,7 @@
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DictationCoordinator.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/DoubaoAsrClient.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/SettingsPanel.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/SettingsStore.swift.o",
@@ -157,6 +162,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o"
         },
         {
@@ -191,6 +200,7 @@
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
@@ -219,6 +229,7 @@
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
@@ -332,6 +343,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift"
         },
         {
@@ -383,6 +398,10 @@
         {
           "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.swift.o"
         },
         {
           "kind" : "file",

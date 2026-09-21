@@ -32,6 +32,12 @@
     "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip~partial.swiftmodule",
     "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/Gzip.swiftdeps"
   },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift": {
+    "dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.d",
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HistoryStore.swiftdeps"
+  },
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift": {
     "dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.d",
     "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/debug/Sotto.build/HotkeyCenter.swift.o",
