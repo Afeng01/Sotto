@@ -311,7 +311,7 @@ export function SettingsApp(): React.ReactElement {
     )
   }
 
-  const credentialsReady = Boolean(settings.appId && settings.accessToken)
+  const credentialsReady = Boolean(settings.apiKey || (settings.appId && settings.accessToken))
   const currentPage = PAGES.find((p) => p.id === page)!
 
   const saveIndicator = saveState === 'saving'
@@ -376,7 +376,7 @@ export function SettingsApp(): React.ReactElement {
                     ，选择旧版服务界面。
                   </p>
                   <p>找到“豆包流式语音识别模型 2.0”类目，选择已申请对应权限的应用。</p>
-                  <p>在下方对照填写 APP ID、Access Token 和 Resource ID，然后点击“测试连接”。</p>
+                  <p>推荐填写新版控制台的 API Key（只需这一项），再填 Resource ID，然后点击“测试连接”。</p>
                 </div>
 
                 <Section title="豆包流式语音输入">
@@ -387,7 +387,31 @@ export function SettingsApp(): React.ReactElement {
                   />
 
                   <label className="block">
-                    <Hint>豆包 APP ID — 对应 X-Api-App-Key，请填写火山引擎控制台中的 APP ID。</Hint>
+                    <Hint>API Key — 新版控制台推荐方式，对应 X-Api-Key 请求头，只需这一个即可；保存时会加密。</Hint>
+                    <div className="relative">
+                      <input
+                        type={showSecret ? 'text' : 'password'}
+                        value={settings.apiKey}
+                        onChange={(event) => setSettings({ ...settings, apiKey: event.target.value })}
+                        onBlur={(event) => void saveVoice({ apiKey: event.target.value.trim() })}
+                        placeholder="请输入新版控制台 API Key"
+                        className={`${inputClass} pr-9`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSecret((v) => !v)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showSecret ? '隐藏' : '显示'}
+                      >
+                        {showSecret ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                      </button>
+                    </div>
+                  </label>
+
+                  <div className="rounded-lg border border-dashed border-border/70 p-3">
+                    <p className="mb-2 text-xs text-muted-foreground">旧版控制台凭证（二选一，已填 API Key 可忽略）</p>
+                    <label className="block">
+                    <Hint>豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。</Hint>
                     <input
                       type="text"
                       value={settings.appId}
@@ -419,9 +443,10 @@ export function SettingsApp(): React.ReactElement {
                       </button>
                     </div>
                   </label>
+                  </div>
 
                   <label className="block">
-                    <Hint>Resource ID — 默认使用豆包语音识别模型 2.0 小时版。</Hint>
+                    <Hint>Resource ID — 小时版填 volc.seedasr.sauc.duration，并发版填 volc.seedasr.sauc.concurrent。</Hint>
                     <input
                       type="text"
                       value={settings.resourceId}

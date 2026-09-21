@@ -30,10 +30,12 @@ export interface VoiceDictationSettings {
   enabled: boolean
   /** 语音识别供应商 */
   provider: VoiceDictationProvider
-  /** 豆包 APP ID，对应 X-Api-App-Key 请求头 */
+  /** 豆包 APP ID，对应 X-Api-App-Key 请求头（旧版控制台鉴权） */
   appId: string
-  /** 豆包 Access Token，对应 X-Api-Access-Key 请求头 */
+  /** 豆包 Access Token，对应 X-Api-Access-Key 请求头（旧版控制台鉴权） */
   accessToken: string
+  /** 新版控制台 API Key，对应 X-Api-Key 请求头；填写后优先于 APP ID + Access Token */
+  apiKey: string
   /** 豆包 Resource ID */
   resourceId: string
   /** 语言，空字符串表示自动 */

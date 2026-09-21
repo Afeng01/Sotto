@@ -39,6 +39,7 @@ const DEFAULT_VOICE_DICTATION_SETTINGS: VoiceDictationSettings = {
   provider: 'doubao',
   appId: '',
   accessToken: '',
+  apiKey: '',
   resourceId: 'volc.seedasr.sauc.duration',
   language: '',
   endpointMode: 'async',
@@ -105,7 +106,7 @@ function persist(next: PersistedFile): void {
 function encryptSecret(value: string): string {
   if (!value) return ''
   if (!safeStorage.isEncryptionAvailable()) {
-    console.warn('[设置] safeStorage 加密不可用，将以明文存储 Access Token')
+    console.warn('[设置] safeStorage 加密不可用，凭证将以明文存储')
     return value
   }
   return safeStorage.encryptString(value).toString('base64')
@@ -116,9 +117,9 @@ function decryptSecret(value: string): string {
   if (!safeStorage.isEncryptionAvailable()) return value
   try {
     return safeStorage.decryptString(Buffer.from(value, 'base64'))
-  } catch (error) {
-    console.error('[设置] 解密 Access Token 失败:', error)
-    return ''
+  } catch {
+    // 兼容从明文迁移过来的值（首次保存后会被加密覆盖）
+    return value
   }
 }
 
@@ -131,6 +132,7 @@ export function getVoiceDictationSettings(): VoiceDictationSettings {
     ...raw,
     appId: raw.appId ?? raw.appKey ?? '',
     accessToken: decryptSecret(encryptedAccessToken),
+    apiKey: decryptSecret(raw.apiKey ?? ''),
     customHotwords: typeof raw.customHotwords === 'string' ? raw.customHotwords : '',
     enabled: raw.enabled !== false,
   }
@@ -152,6 +154,7 @@ export function updateVoiceDictationSettings(
     voiceDictation: {
       ...next,
       accessToken: encryptSecret(next.accessToken),
+      apiKey: encryptSecret(next.apiKey),
     },
   })
   return next

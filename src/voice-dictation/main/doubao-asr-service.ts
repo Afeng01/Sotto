@@ -297,22 +297,33 @@ function parseServerMessage(data: Buffer): ParsedServerMessage | null {
   return parseServerPayload(parsed, flags === FLAG_SERVER_LAST_SEQUENCE)
 }
 
+/** 豆包 ASR 鉴权：新版控制台填了 API Key 则用 X-Api-Key，否则回退旧版 APP ID + Access Token */
+function buildAuthHeaders(settings: VoiceDictationSettings): Record<string, string> {
+  const base: Record<string, string> = {
+    'X-Api-Resource-Id': settings.resourceId,
+    'X-Api-Connect-Id': randomUUID(),
+  }
+  if (settings.apiKey) {
+    return { ...base, 'X-Api-Key': settings.apiKey }
+  }
+  return { ...base, 'X-Api-App-Key': settings.appId, 'X-Api-Access-Key': settings.accessToken }
+}
+
+function hasCredentials(settings: VoiceDictationSettings): boolean {
+  return Boolean(settings.resourceId && (settings.apiKey || (settings.appId && settings.accessToken)))
+}
+
 /** 测试豆包 ASR 连接，仅验证 WebSocket 握手和鉴权 Header。 */
 export async function testDoubaoAsrConnection(
   settings: VoiceDictationSettings,
 ): Promise<{ success: boolean; message: string }> {
-  if (!settings.appId || !settings.accessToken || !settings.resourceId) {
-    return { success: false, message: '请先填写 APP ID、Access Token 和 Resource ID' }
+  if (!hasCredentials(settings)) {
+    return { success: false, message: '请先填写 API Key（新版控制台）或 APP ID + Access Token（旧版控制台）' }
   }
 
   return await new Promise((resolve) => {
     const ws = new WebSocket(getEndpoint(settings), {
-      headers: {
-        'X-Api-App-Key': settings.appId,
-        'X-Api-Access-Key': settings.accessToken,
-        'X-Api-Resource-Id': settings.resourceId,
-        'X-Api-Connect-Id': randomUUID(),
-      },
+      headers: buildAuthHeaders(settings),
     })
 
     const timer = setTimeout(() => {
@@ -338,8 +349,8 @@ export async function startDoubaoAsrSession(
   settings: VoiceDictationSettings,
   win: BrowserWindow,
 ): Promise<void> {
-  if (!settings.appId || !settings.accessToken || !settings.resourceId) {
-    throw new Error('请先填写豆包 ASR 凭证')
+  if (!hasCredentials(settings)) {
+    throw new Error('请先填写豆包 ASR 凭证（API Key 或 APP ID + Access Token）')
   }
 
   await stopDoubaoAsrSession(sessionId)
@@ -347,12 +358,7 @@ export async function startDoubaoAsrSession(
 
   await new Promise<void>((resolve, reject) => {
     const ws = new WebSocket(getEndpoint(settings), {
-      headers: {
-        'X-Api-App-Key': settings.appId,
-        'X-Api-Access-Key': settings.accessToken,
-        'X-Api-Resource-Id': settings.resourceId,
-        'X-Api-Connect-Id': randomUUID(),
-      },
+      headers: buildAuthHeaders(settings),
     })
 
     const active: ActiveSession = { sessionId, ws, win, closed: false }
