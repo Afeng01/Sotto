@@ -1,0 +1,62 @@
+{
+  "": {
+    "dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Sotto.d",
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Sotto.o",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/master.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/AudioCapture.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/AudioCapture~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/AudioCapture.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/CapturePanel.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DictationCoordinator.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DictationCoordinator.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/DoubaoAsrClient.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DoubaoAsrClient.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DoubaoAsrClient~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/DoubaoAsrClient.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Gzip.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Gzip~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Gzip.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsStore.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsStore.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TextInsertion.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TextInsertion~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TextInsertion.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TranscriptMerger.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TranscriptMerger~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TranscriptMerger.swiftdeps"
+  },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/main.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/main.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/main.swiftdeps"
+  }
+}

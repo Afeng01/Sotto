@@ -11,6 +11,7 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var coordinator: DictationCoordinator?
     private var statusItem: NSStatusItem?
+    private let settingsPanel = SettingsPanel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         // check 模式只做握手验证，不建菜单栏/不注册热键
@@ -32,6 +33,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let menu = NSMenu()
         menu.addItem(withTitle: "呦呦 · 原生原型（\(hotkeyOk ? settings.hotkey : "快捷键未注册")）", action: nil, keyEquivalent: "")
         menu.addItem(.separator())
+        let settingsMenuItem = NSMenuItem(title: "设置…", action: #selector(openSettings), keyEquivalent: ",")
+        settingsMenuItem.target = self
+        menu.addItem(settingsMenuItem)
         let quit = NSMenuItem(title: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         menu.addItem(quit)
         item.menu = menu
@@ -40,9 +44,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print("[启动] 原生原型就绪：菜单栏已常驻，快捷键 \(settings.hotkey) → \(hotkeyOk ? "已注册" : "注册失败")")
     }
 
-    // Dock 图标点击：无窗口可开（原型没有设置窗），仅把应用带到前台。
+    @objc private func openSettings() {
+        settingsPanel.show()
+    }
+
+    // Dock 图标点击：打开设置窗口
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        true
+        if ProcessInfo.processInfo.arguments.contains("check") { return true }
+        settingsPanel.show()
+        return true
     }
 }
 
