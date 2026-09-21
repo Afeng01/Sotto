@@ -2,7 +2,7 @@
  * Sotto（呦呦） 主进程入口
  *
  * 菜单栏常驻应用：托盘 + 全局快捷键 + 听写采集窗口 + 设置窗口。
- * 不创建 Dock 图标（LSUIElement），不加载任何 Agent 运行时。
+ * 常驻菜单栏 + Dock 图标（点击 Dock 图标打开设置），不加载任何 Agent 运行时。
  */
 
 import { app, BrowserWindow, dialog, ipcMain, Menu, type Tray } from 'electron'
@@ -83,7 +83,7 @@ function getTrayDeps(): TrayDeps {
 }
 
 async function bootstrap(): Promise<void> {
-  if (process.platform === 'darwin' && app.dock) app.dock.hide()
+  // 显示 Dock 图标：用户可以从 Dock 点击唤起设置窗（activate 事件已接 showSettingsWindow）。
 
   // 独立应用没有主菜单，但需要标准编辑菜单支持设置页输入框快捷键。
   Menu.setApplicationMenu(Menu.buildFromTemplate([
