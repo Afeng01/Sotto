@@ -56,6 +56,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/KeychainStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift"
         },
         {
@@ -95,6 +99,7 @@
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/Gzip.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HistoryStore.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter.swift.o",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsStore.swift.o",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/TextInsertion.swift.o",
@@ -174,6 +179,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel.swift.o"
         },
         {
@@ -207,6 +216,7 @@
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
+        "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/KeychainStore.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
         "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift",
@@ -239,6 +249,7 @@
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift",
+      "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/KeychainStore.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift",
       "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift",
@@ -344,6 +355,10 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/KeychainStore.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift"
         },
         {
@@ -403,6 +418,10 @@
         {
           "kind" : "file",
           "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore.swift.o"
         },
         {
           "kind" : "file",

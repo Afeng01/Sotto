@@ -44,6 +44,11 @@
     "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter~partial.swiftmodule",
     "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/HotkeyCenter.swiftdeps"
   },
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/KeychainStore.swift": {
+    "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore.swift.o",
+    "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore~partial.swiftmodule",
+    "swift-dependencies": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/KeychainStore.swiftdeps"
+  },
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift": {
     "object": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel.swift.o",
     "swiftmodule": "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/.build/arm64-apple-macosx/release/Sotto.build/SettingsPanel~partial.swiftmodule",
