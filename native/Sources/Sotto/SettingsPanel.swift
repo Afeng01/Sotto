@@ -152,6 +152,8 @@ final class SettingsModel: ObservableObject {
         guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) else { return }
         do {
             try data.write(to: path, options: .atomic)
+            // 文件里含明文凭证，收紧权限
+            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
             flashSaved()
         } catch {
             saveState = "error:\(error.localizedDescription)"

@@ -43,13 +43,18 @@ enum TranscriptMerger {
         return TranscriptMergeResult(state: newState, text: join(previous, text))
     }
 
-    /// ASCII 词边界之间补空格（英文单词间分隔），中文直接拼接。
+    /// ASCII 词边界之间补空格（对齐 TS 版 /​[A-Za-z0-9]/，中文直接拼接）
     private static func join(_ left: String, _ right: String) -> String {
         if left.isEmpty { return right }
         if right.isEmpty { return left }
         let lastLeft = left.last!
         let firstRight = right.first!
-        let asciiEdge: (Character) -> Bool = { $0.isLetter || $0.isNumber }
+        let asciiEdge: (Character) -> Bool = { char in
+            guard let scalar = char.unicodeScalars.first, char.unicodeScalars.count == 1 else { return false }
+            return (scalar.value >= 48 && scalar.value <= 57)
+                || (scalar.value >= 65 && scalar.value <= 90)
+                || (scalar.value >= 97 && scalar.value <= 122)
+        }
         let separator = asciiEdge(lastLeft) && asciiEdge(firstRight) ? " " : ""
         return left + separator + right
     }

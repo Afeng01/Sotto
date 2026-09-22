@@ -67,14 +67,23 @@ final class DoubaoAsrClient: NSObject {
         receiveLoop()
 
         // 建连成功后立刻下发 full client request（服务端靠它初始化识别会话）。
+        var connected = false
         task.send(.data(buildClientRequest())) { [weak self] error in
             DispatchQueue.main.async {
                 if let error {
                     self?.onError?("发送初始请求失败: \(error.localizedDescription)")
                 } else {
+                    connected = true
                     self?.onConnected?()
                 }
             }
+        }
+
+        // 连接超时（对齐 TS 版 10s）：无响应则终止并报错
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
+            guard !connected else { return }
+            self?.terminate()
+            self?.onError?("连接豆包 ASR 超时，请检查网络或凭证")
         }
     }
 

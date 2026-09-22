@@ -70,6 +70,9 @@ final class DictationCoordinator {
         }
         client.onError = { [weak self] message in
             guard let self else { return }
+            // 停止提交阶段的服务端断开（finish 后正常收尾）不算错误，
+            // 等 deadline 提交文本；只有活跃会话的报错才展示
+            if self.state == .stopping { return }
             self.showPanelError(message)
         }
         client.onClosed = { [weak self] in
@@ -160,23 +163,33 @@ final class DictationCoordinator {
             panel.hide()
             return
         }
-        // 输出走统一入口：按输出方式写光标/剪贴板，并记录历史
-        HistoryStore.add(text: text, mode: settings.outputMode == "clipboard" ? "clipboard" : "cursor")
+        // 输出：写光标（失败降级剪贴板）或仅复制，并记录历史
         if settings.outputMode == "clipboard" {
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(text, forType: .string)
+            HistoryStore.add(text: text, mode: "clipboard")
             print("[听写] 已复制到剪贴板")
             state = .idle
             panel.hide()
         } else {
-            panel.transcript = text
-            panel.commit()
+            let result = TextInsertion.pasteAtCursor(text)
+            HistoryStore.add(text: text, mode: result.success ? "cursor" : "clipboard")
+            print("[听写] \(result.message)")
             state = .idle
+            panel.hide()
         }
     }
 
     private func showPanelError(_ message: String) {
+        // 活跃会话中报错必须先回收资源，否则麦克风 tap 和 WS 会泄漏，
+        // 下次 toggle 会叠加第二个会话
+        capture?.stop()
+        capture = nil
+        client?.terminate()
+        client = nil
+        stopDeadline?.cancel()
+        stopDeadline = nil
         state = .idle
         panel.statusIsError = true
         panel.status = message
