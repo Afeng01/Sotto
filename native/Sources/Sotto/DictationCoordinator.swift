@@ -14,6 +14,11 @@ final class DictationCoordinator {
     private var mergeState = TranscriptMergeState()
     private var sessionId = ""
     private var stopDeadline: DispatchWorkItem?
+    /// 错误浮窗 6 秒自动隐藏定时器：新 start()/新报错前先取消，避免定时器叠加
+    private var errorHideWork: DispatchWorkItem?
+    /// 会话代数：每次 start/回收旧 client 时 +1，陈旧 client 的回调比对不一致即丢弃，
+    /// 防止停止后旧连接的 onError/onTranscript 深进新会话或 idle 态弹「随机错误」
+    private var sessionGeneration = 0
 
     private var settings: SottoSettings
 
@@ -49,34 +54,42 @@ final class DictationCoordinator {
             return
         }
 
+        errorHideWork?.cancel()
+        errorHideWork = nil
+
+        // 新会话：作废旧 client 的全部回调
+        sessionGeneration += 1
         state = .active
         sessionId = UUID().uuidString
         mergeState = TranscriptMergeState()
         panel.statusIsError = false
         panel.status = "正在连接豆包 ASR..."
         panel.transcript = ""
+        panel.volume = 0
         panel.show()
 
         let client = DoubaoAsrClient(settings: settings)
         self.client = client
+        let generation = sessionGeneration
         client.onConnected = { [weak self] in
-            guard let self, self.state == .active else { return }
+            guard let self, generation == self.sessionGeneration, self.state == .active else { return }
             self.panel.statusIsError = false
             self.panel.status = ""
             self.startCapture()
         }
         client.onTranscript = { [weak self] text, isFinal in
-            self?.handleTranscript(text, isFinal: isFinal)
+            guard let self, generation == self.sessionGeneration else { return }
+            self.handleTranscript(text, isFinal: isFinal)
         }
         client.onError = { [weak self] message in
-            guard let self else { return }
+            guard let self, generation == self.sessionGeneration else { return }
             // 停止提交阶段的服务端断开（finish 后正常收尾）不算错误，
             // 等 deadline 提交文本；只有活跃会话的报错才展示
             if self.state == .stopping { return }
             self.showPanelError(message)
         }
         client.onClosed = { [weak self] in
-            guard let self, self.state == .stopping else { return }
+            guard let self, generation == self.sessionGeneration, self.state == .stopping else { return }
             // 服务端主动断开（finish 后的正常收尾），到点提交
             self.commitIfStopping()
         }
@@ -111,7 +124,9 @@ final class DictationCoordinator {
             self?.client?.sendAudio(chunk)
         }
         capture.onVolume = { [weak self] vol in
-            self?.panel.volume = Double(vol)
+            // 浮窗 orderOut 后音量回调直接丢弃，不唤醒隐藏窗口
+            guard let self, self.panel.isVisible else { return }
+            self.panel.volume = Double(vol)
         }
         do {
             try capture.start()
@@ -123,7 +138,12 @@ final class DictationCoordinator {
     }
 
     private func handleTranscript(_ text: String, isFinal: Bool) {
-        if text.hasPrefix("豆包 ASR 错误") {
+        if text.hasPrefix(DoubaoAsrClient.errorFramePrefix) {
+            // 停止提交阶段收到错误帧：不清已识别文本、不弹错误，只记日志等 deadline 正常提交
+            if state == .stopping {
+                print("[听写] stopping 阶段忽略错误帧: \(text)")
+                return
+            }
             showPanelError(text)
             return
         }
@@ -157,6 +177,8 @@ final class DictationCoordinator {
         stopDeadline = nil
 
         let text = panel.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 作废本会话所有 client 回调，终止后不再有陈旧回调漏进 idle 态
+        sessionGeneration += 1
         client?.terminate()
         client = nil
 
@@ -186,7 +208,8 @@ final class DictationCoordinator {
 
     private func showPanelError(_ message: String) {
         // 活跃会话中报错必须先回收资源，否则麦克风 tap 和 WS 会泄漏，
-        // 下次 toggle 会叠加第二个会话
+        // 下次 toggle 会叠加第二个会话；同时作废旧回调并取消旧的隐藏定时器
+        sessionGeneration += 1
         capture?.stop()
         capture = nil
         client?.terminate()
@@ -198,9 +221,12 @@ final class DictationCoordinator {
         panel.status = message
         panel.transcript = ""
         panel.show()
-        // 错误提示展示 6 秒（对齐 ERROR_VISIBLE_MS）
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
+        // 错误提示展示 6 秒（对齐 ERROR_VISIBLE_MS）；先 cancel 旧的再存新的，避免叠加隐藏
+        errorHideWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
             self?.panel.hide()
         }
+        errorHideWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6, execute: work)
     }
 }

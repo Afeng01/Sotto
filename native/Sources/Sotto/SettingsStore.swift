@@ -1,5 +1,12 @@
 import Foundation
 
+/// 共用原子写：先 .atomic 写入，再收紧到 0600。
+/// settings.json 含凭证、history.json 含听写内容，atomic 重写会把权限打回默认 0644，必须每次补 chmod。
+func writeUserDataJSON(_ data: Data, to path: URL) {
+    try? data.write(to: path, options: .atomic)
+    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+}
+
 /// 设置存储（只读）：复用 Electron 版的 ~/.sotto/settings.json。
 ///
 /// API Key 存 macOS Keychain（KeychainStore）；settings.json 里不再落明文，
@@ -19,6 +26,8 @@ struct SottoSettings {
     var outputMode: String = "auto"
     var hotkey: String = "Control+`"
     var launchAtLogin: Bool = false
+    /// Keychain 项存在但被系统拒绝访问（ACL 不匹配）：apiKey 为空不是真没配，UI 需示警
+    var keychainDenied = false
 
     /// Electron safeStorage v10 密文检测：base64 解码后以 "v10" 开头
     static func looksLikeCiphertext(_ value: String) -> Bool {
@@ -56,16 +65,23 @@ struct SottoSettings {
                 var updated = obj
                 updated["voiceDictation"] = voiceUpdate
                 if let data = try? JSONSerialization.data(withJSONObject: updated, options: [.prettyPrinted, .sortedKeys]) {
-                    try? data.write(to: path, options: .atomic)
-                    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+                    writeUserDataJSON(data, to: path)
                 }
                 settings.apiKey = jsonKey
             } else {
                 settings.apiKey = jsonKey
             }
         } else {
-            // Keychain 优先，settings.json（空串）兜底
-            settings.apiKey = KeychainStore.get() ?? ""
+            // Keychain 优先，settings.json（空串）兜底；被系统拒绝访问时不能当成「未配置」
+            switch KeychainStore.getStatus() {
+            case .found(let value):
+                settings.apiKey = value
+            case .denied:
+                settings.apiKey = ""
+                settings.keychainDenied = true
+            case .missing:
+                settings.apiKey = ""
+            }
         }
         settings.appId = voice["appId"] as? String ?? voice["appKey"] as? String ?? ""
         settings.accessToken = voice["accessToken"] as? String ?? voice["accessKey"] as? String ?? ""
@@ -99,11 +115,15 @@ struct SottoSettings {
         if let launchAtLogin { app["launchAtLogin"] = launchAtLogin }
         obj["app"] = app
         if let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) {
-            try? data.write(to: path, options: .atomic)
+            writeUserDataJSON(data, to: path)
         }
     }
 
     /// `setkey` 子命令：从 stdin 读入 API Key，写入 Keychain
+    ///
+    /// 注意 ACL 限制：钥匙串项的 ACL 绑定创建时的签名身份。若该项由 app 写入，
+    /// CLI（不同签名/无签名进程）读取可能触发 errSecInteractionNotAllowed 被拒——
+    /// 这是系统行为，不改架构；遇此情况在设置页重新粘贴 API Key 保存即可（以最后一次保存为准）。
     static func setKeyFromStdin() -> Int32 {
         guard let line = FileHandle.standardInput.availableDataLine() else {
             print("未读到输入")

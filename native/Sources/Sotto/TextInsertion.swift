@@ -9,6 +9,12 @@ enum TextInsertion {
     }
 
     static func pasteAtCursor(_ text: String) -> Result {
+        // 权限预检必须在动剪贴板之前：无权限时直接返回，
+        // 否则文本已写入剪贴板却无法粘贴，用户原剪贴板也被吞掉
+        guard hasAccessibilityPermission() else {
+            return Result(success: false, message: "需要在系统设置 → 隐私与安全性 → 辅助功能中授权呦呦")
+        }
+
         let pasteboard = NSPasteboard.general
 
         // 备份当前剪贴板（恢复用，对齐 Electron 版策略：仅当 10s 后剪贴板仍是我们的文本时恢复）
@@ -20,10 +26,6 @@ enum TextInsertion {
 
         // 让目标应用注意到剪贴板已更新
         Thread.sleep(forTimeInterval: 0.08)
-
-        if !hasAccessibilityPermission() {
-            return Result(success: false, message: "需要在系统设置 → 隐私与安全性 → 辅助功能中授权呦呦")
-        }
 
         let ok = pressCmdV()
         guard ok else {

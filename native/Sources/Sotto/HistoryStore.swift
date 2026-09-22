@@ -50,6 +50,7 @@ enum HistoryStore {
             "id": $0.id, "text": $0.text, "mode": $0.mode, "createdAt": $0.createdAt,
         ] }]
         guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted]) else { return }
-        try? data.write(to: fileURL, options: .atomic)
+        // 听写内容属用户隐私，与其他 ~/.sotto 数据一样收紧到 0600
+        writeUserDataJSON(data, to: fileURL)
     }
 }

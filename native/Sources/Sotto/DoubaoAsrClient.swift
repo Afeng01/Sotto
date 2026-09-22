@@ -14,6 +14,11 @@ final class DoubaoAsrClient: NSObject {
     private var receiveLoopRunning = false
     private var credentials: SottoSettings
     private let connectId = UUID().uuidString
+    /// 建链阶段收敛标记：send 失败与 10s 超时只允许触发一次 onError，避免双重报错
+    private var connectSettled = false
+
+    /// 服务端错误帧转写文本的统一前缀（coordinator 据此识别错误帧，避免裸字符串散落两处）
+    static let errorFramePrefix = "豆包 ASR 错误"
 
     var onTranscript: ((String, Bool) -> Void)?
     var onError: ((String) -> Void)?
@@ -67,23 +72,25 @@ final class DoubaoAsrClient: NSObject {
         receiveLoop()
 
         // 建连成功后立刻下发 full client request（服务端靠它初始化识别会话）。
-        var connected = false
         task.send(.data(buildClientRequest())) { [weak self] error in
             DispatchQueue.main.async {
+                guard let self, !self.connectSettled else { return }
                 if let error {
-                    self?.onError?("发送初始请求失败: \(error.localizedDescription)")
+                    self.connectSettled = true
+                    self.onError?("发送初始请求失败: \(error.localizedDescription)")
                 } else {
-                    connected = true
-                    self?.onConnected?()
+                    self.connectSettled = true
+                    self.onConnected?()
                 }
             }
         }
 
-        // 连接超时（对齐 TS 版 10s）：无响应则终止并报错
+        // 连接超时（对齐 TS 版 10s）：无响应则终止并报错；send 失败已报过错则不再二次触发
         DispatchQueue.main.asyncAfter(deadline: .now() + 10) { [weak self] in
-            guard !connected else { return }
-            self?.terminate()
-            self?.onError?("连接豆包 ASR 超时，请检查网络或凭证")
+            guard let self, !self.connectSettled else { return }
+            self.connectSettled = true
+            self.terminate()
+            self.onError?("连接豆包 ASR 超时，请检查网络或凭证")
         }
     }
 
@@ -240,14 +247,11 @@ final class DoubaoAsrClient: NSObject {
             guard offset + 8 + size <= data.count else { return }
             let messageData = data.subdata(in: (offset + 8)..<(offset + 8 + size))
             let message = String(data: messageData, encoding: .utf8) ?? ""
-            var text = "豆包 ASR 错误 \(code): \(message)"
-            // 错误帧 msg 之后附 4 字节 logid（与响应头 X-Api-Logid 同源），
-            // 附到文案末尾方便用户报障。URLSessionWebSocketTask 拿不到响应头，只做协议层。
-            if offset + 8 + size + 4 <= data.count {
-                let logid = readUInt32BE(data, offset + 8 + size)
-                if logid != 0 { text += " (logid: \(logid))" }
-            }
-            onTranscript?(text, true)
+            // 错误帧 = header + code + size + msg，协议里没有 logid 字段（X-Tt-Logid 是 HTTP
+            // 响应头字符串，二进制帧装不下，旧版解析分支永不触发已删）；
+            // 报障对账用客户端生成的 connectId（对应请求头 X-Api-Connect-Id），
+            // 用户把这段 id 给服务端即可查到当次会话日志。
+            onTranscript?("\(Self.errorFramePrefix) \(code): \(message) (connectId: \(connectId))", true)
             return
         }
 

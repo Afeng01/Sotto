@@ -9,12 +9,15 @@ final class HotkeyCenter {
     private var registeredKeycode: UInt32 = 0
     private var registeredModifiers: UInt32 = 0
 
-    /// 注册快捷键；传 nil 表示禁用。失败返回 false（被占用）。
+    /// 注册快捷键；传 nil 表示禁用。失败返回 false（被占用）且保留旧注册。
+    /// 顺序：parse → 试注册新键 → 成功后才 unregister 旧 ref，避免失败时丢旧快捷键。
     @discardableResult
     func register(accelerator: String?) -> Bool {
-        unregister()
-
-        guard let accelerator, !accelerator.isEmpty else { return true }
+        guard let accelerator, !accelerator.isEmpty else {
+            // 显式禁用：才允许直接注销旧注册
+            unregister()
+            return true
+        }
 
         guard let (keycode, modifiers) = Self.parseAccelerator(accelerator) else {
             print("[快捷键] 无法解析: \(accelerator)")
@@ -37,15 +40,23 @@ final class HotkeyCenter {
             guard status == noErr else { return false }
         }
 
-        var ref: EventHotKeyRef?
+        // 先试注册新键：失败时旧注册仍在，返回 false 让 UI 报错
+        var newRef: EventHotKeyRef?
         let registerStatus = RegisterEventHotKey(
             keycode, modifiers,
             EventHotKeyID(signature: OSType(0x534F5454), id: 1), // 'SOTT'
-            GetApplicationEventTarget(), 0, &ref
+            GetApplicationEventTarget(), 0, &newRef
         )
-        guard registerStatus == noErr else { return false }
+        guard registerStatus == noErr else {
+            print("[快捷键] 注册失败（可能被占用）: \(accelerator)")
+            return false
+        }
 
-        hotKeyRef = ref
+        // 新键注册成功，才替换旧 ref
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+        }
+        hotKeyRef = newRef
         registeredKeycode = keycode
         registeredModifiers = modifiers
         return true

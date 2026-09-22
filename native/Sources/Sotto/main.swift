@@ -112,9 +112,10 @@ func runCheck() async -> Int32 {
     return await withCheckedContinuation { continuation in
         let client = DoubaoAsrClient(settings: settings)
         var settled = false
-        client.onConnected = {
+        // [weak client] 避免闭包强持有自身所在的 client 造成保留环
+        client.onConnected = { [weak client] in
             print("握手 + 初始请求发送成功")
-            client.terminate()
+            client?.terminate()
             if !settled { settled = true; continuation.resume(returning: 0) }
         }
         client.onError = { message in

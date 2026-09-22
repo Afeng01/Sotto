@@ -19,9 +19,6 @@ final class CapturePanel {
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        viewModel.onCommit = { [weak self] _ in
-            self?.hide()
-        }
         // 转写变化时同步窗口高度（对齐 resizeCaptureWindow：内容高度驱动，底部对齐不变）
         viewModel.$text
             .receive(on: DispatchQueue.main)
@@ -78,8 +75,9 @@ final class CapturePanel {
         panel.orderFrontRegardless()
     }
 
-    func commit() {
-        viewModel.onCommit?(viewModel.text)
+    /// 浮窗是否可见（orderOut 后为 false）：音量等回调据此丢弃，避免隐藏后仍驱动 UI
+    var isVisible: Bool {
+        panel?.isVisible ?? false
     }
 
     func hide() {
@@ -142,8 +140,6 @@ final class TranscriptViewModel: ObservableObject {
     @Published var statusIsError = false
     /// 实时音量（0…1），由 AudioCapture.onVolume 驱动（对齐 Electron 真实音量声波）
     @Published var volume: Double = 0
-
-    var onCommit: ((String) -> Void)?
 }
 
 /// 浮窗视觉：结构复刻 Electron 版 VoiceCaptureApp.tsx 的 return JSX（L355-411）。

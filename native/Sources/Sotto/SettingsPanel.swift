@@ -51,12 +51,14 @@ final class SettingsModel: ObservableObject {
     @Published var launchAtLogin = false
 
     // MARK: 状态
-    @Published var saveState = "" // "" | "saved" | "error:..."
+    @Published var saveState = "" // "" | "saved" | "saving" | "error:..."
     @Published var testStatus = ""
     @Published var testOk = false
     @Published var testing = false
     @Published var recordingHotkey = false
     @Published var hotkeyError: String?
+    /// Keychain 项存在但被系统拒绝访问（ACL 不匹配）：API Key 读不出来但不是真没配
+    @Published var keychainDenied = false
 
     // MARK: 历史
     @Published var history: [HistoryEntry]?
@@ -91,6 +93,7 @@ final class SettingsModel: ObservableObject {
         hotkey = s.hotkey
         outputMode = s.outputMode
         launchAtLogin = s.launchAtLogin
+        keychainDenied = s.keychainDenied
     }
 
     // MARK: 保存（防抖自动保存，对齐 Electron 版 blur 保存）
@@ -117,14 +120,29 @@ final class SettingsModel: ObservableObject {
         voice["provider"] = "doubao"
         voice["enabled"] = enabled
         voice["credentialMode"] = credentialMode == "legacy" ? "legacy" : "api-key"
-        // API Key 只存 Keychain，settings.json 不再落明文（apiKey 字段写空串）
+        // API Key 只存 Keychain，settings.json 不再落明文。仅在钥匙串写入成功时才把
+        // json 里的 apiKey 清成空串：set 失败时保留原值，避免钥匙串失败连带丢凭证。
         let trimmedKey = apiKey.trimmingCharacters(in: .whitespaces)
+        var keychainError: String?
         if trimmedKey.isEmpty {
-            KeychainStore.delete()
+            switch KeychainStore.getStatus() {
+            case .found(let existing) where !existing.isEmpty:
+                // 只有钥匙串当前还能读到非空值，才证明是用户真清空，允许 delete
+                KeychainStore.delete()
+                voice["apiKey"] = ""
+            case .denied:
+                // 项存在但读不到：无法证明用户真清空，绝不能删，也不能呈现为已清空
+                keychainError = "钥匙串访问被系统拒绝，无法确认是否清除已存 API Key"
+            default:
+                voice["apiKey"] = ""
+            }
         } else {
-            KeychainStore.set(trimmedKey)
+            if KeychainStore.set(trimmedKey) {
+                voice["apiKey"] = ""
+            } else {
+                keychainError = "凭证保存到钥匙串失败，请重试或在系统设置中检查呦呦的钥匙串访问权限"
+            }
         }
-        voice["apiKey"] = ""
         voice["appId"] = appId.trimmingCharacters(in: .whitespaces)
         voice["accessToken"] = accessToken.trimmingCharacters(in: .whitespaces)
         voice["resourceId"] = resourceId.trimmingCharacters(in: .whitespaces)
@@ -133,7 +151,12 @@ final class SettingsModel: ObservableObject {
         voice["customHotwords"] = customHotwords
         voice["outputMode"] = outputMode
         obj["voiceDictation"] = voice
-        writeJSON(obj, to: path)
+        let jsonOk = writeJSON(obj, to: path)
+        if let keychainError {
+            saveState = "error:\(keychainError)"
+        } else if jsonOk {
+            flashSaved()
+        }
     }
 
     func setHotkey(_ value: String) {
@@ -163,16 +186,15 @@ final class SettingsModel: ObservableObject {
         }
     }
 
-    private func writeJSON(_ obj: [String: Any], to path: URL) {
-        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) else { return }
-        do {
-            try data.write(to: path, options: .atomic)
-            // 文件里含明文凭证，收紧权限
-            try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
-            flashSaved()
-        } catch {
-            saveState = "error:\(error.localizedDescription)"
+    @discardableResult
+    private func writeJSON(_ obj: [String: Any], to path: URL) -> Bool {
+        guard let data = try? JSONSerialization.data(withJSONObject: obj, options: [.prettyPrinted, .sortedKeys]) else {
+            saveState = "error:设置序列化失败"
+            return false
         }
+        // 文件里含明文凭证，共用原子写收紧到 0600
+        writeUserDataJSON(data, to: path)
+        return true
     }
 
     private func flashSaved() {
@@ -215,8 +237,9 @@ final class SettingsModel: ObservableObject {
         await withCheckedContinuation { continuation in
             let client = DoubaoAsrClient(settings: settings)
             var settled = false
-            client.onConnected = {
-                client.terminate()
+            // [weak client] 避免闭包强持有自身所在的 client 造成保留环
+            client.onConnected = { [weak client] in
+                client?.terminate()
                 if !settled { settled = true; continuation.resume(returning: (true, "豆包 ASR 连接成功")) }
             }
             client.onError = { message in
@@ -751,6 +774,11 @@ struct SettingsView: View {
                                             .onChange(of: model.apiKey) { _ in model.scheduleVoiceSave() }
                                         if SottoSettings.looksLikeCiphertext(model.apiKey) {
                                             Text("检测到这是 Electron 版加密后的密文，原生版无法使用——请删除后重新粘贴明文 API Key")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(Color.sottoDestructive)
+                                        }
+                                        if model.keychainDenied {
+                                            Text("钥匙串访问被系统拒绝，已保存的 API Key 读不出来——请重新粘贴 API Key 保存")
                                                 .font(.system(size: 12))
                                                 .foregroundColor(Color.sottoDestructive)
                                         }
