@@ -237,9 +237,17 @@ final class DoubaoAsrClient: NSObject {
             guard offset + 8 <= data.count else { return }
             let code = readUInt32BE(data, offset)
             let size = Int(readUInt32BE(data, offset + 4))
+            guard offset + 8 + size <= data.count else { return }
             let messageData = data.subdata(in: (offset + 8)..<(offset + 8 + size))
             let message = String(data: messageData, encoding: .utf8) ?? ""
-            onTranscript?("豆包 ASR 错误 \(code): \(message)", true)
+            var text = "豆包 ASR 错误 \(code): \(message)"
+            // 错误帧 msg 之后附 4 字节 logid（与响应头 X-Api-Logid 同源），
+            // 附到文案末尾方便用户报障。URLSessionWebSocketTask 拿不到响应头，只做协议层。
+            if offset + 8 + size + 4 <= data.count {
+                let logid = readUInt32BE(data, offset + 8 + size)
+                if logid != 0 { text += " (logid: \(logid))" }
+            }
+            onTranscript?(text, true)
             return
         }
 

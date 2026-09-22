@@ -1,9 +1,11 @@
 import Foundation
 
-/// 设置存储（只读）：复用 Electron 版的 ~/.sotto/settings.json，凭证零迁移。
+/// 设置存储（只读）：复用 Electron 版的 ~/.sotto/settings.json。
 ///
+/// API Key 存 macOS Keychain（KeychainStore）；settings.json 里不再落明文，
+/// 读取时若还发现明文 key（老用户），自动迁移进 Keychain 并清掉 json 里的值。
 /// safeStorage 加密过的密钥（base64 形态）无法在 Electron 外解密，原样传递。
-/// 当前文件中的 apiKey 为明文（首次迁移后未重新保存），可直接使用。
+/// ~/.sotto/native-credentials.json 已废弃，不再读取。
 struct SottoSettings {
     var apiKey: String = ""
     var appId: String = ""
@@ -45,7 +47,26 @@ struct SottoSettings {
         let voice = obj["voiceDictation"] as? [String: Any] ?? [:]
         let app = obj["app"] as? [String: Any] ?? [:]
 
-        settings.apiKey = voice["apiKey"] as? String ?? ""
+        let jsonKey = voice["apiKey"] as? String ?? ""
+        if !jsonKey.isEmpty && !looksLikeCiphertext(jsonKey) {
+            // 迁移：settings.json 还留着明文 key → 写入 Keychain，json 里只留空串
+            if KeychainStore.set(jsonKey) {
+                var voiceUpdate = voice
+                voiceUpdate["apiKey"] = ""
+                var updated = obj
+                updated["voiceDictation"] = voiceUpdate
+                if let data = try? JSONSerialization.data(withJSONObject: updated, options: [.prettyPrinted, .sortedKeys]) {
+                    try? data.write(to: path, options: .atomic)
+                    try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
+                }
+                settings.apiKey = jsonKey
+            } else {
+                settings.apiKey = jsonKey
+            }
+        } else {
+            // Keychain 优先，settings.json（空串）兜底
+            settings.apiKey = KeychainStore.get() ?? ""
+        }
         settings.appId = voice["appId"] as? String ?? voice["appKey"] as? String ?? ""
         settings.accessToken = voice["accessToken"] as? String ?? voice["accessKey"] as? String ?? ""
         if let mode = voice["credentialMode"] as? String {
@@ -61,15 +82,6 @@ struct SottoSettings {
         settings.outputMode = voice["outputMode"] as? String ?? "auto"
         settings.hotkey = app["hotkey"] as? String ?? "Control+`"
         settings.launchAtLogin = app["launchAtLogin"] as? Bool ?? false
-
-        // 原生原型专用：Electron safeStorage 加密的 apiKey 原生进程解不开，
-        // 允许通过 `setkey` 写入一份原生可读的凭证（0600 权限，正式版将改用 Keychain）。
-        let nativePath = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".sotto/native-credentials.json")
-        if let nativeData = try? Data(contentsOf: nativePath),
-           let native = try? JSONSerialization.jsonObject(with: nativeData) as? [String: Any] {
-            if let key = native["apiKey"] as? String, !key.isEmpty { settings.apiKey = key }
-        }
         return settings
     }
 
@@ -91,7 +103,7 @@ struct SottoSettings {
         }
     }
 
-    /// `setkey` 子命令：从 stdin 读入 API Key，写入原生凭证文件
+    /// `setkey` 子命令：从 stdin 读入 API Key，写入 Keychain
     static func setKeyFromStdin() -> Int32 {
         guard let line = FileHandle.standardInput.availableDataLine() else {
             print("未读到输入")
@@ -102,13 +114,11 @@ struct SottoSettings {
             print("空的 API Key")
             return 1
         }
-        let path = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".sotto/native-credentials.json")
-        try? FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
-        let payload = try? JSONSerialization.data(withJSONObject: ["apiKey": key])
-        try? payload?.write(to: path)
-        try? FileManager.default.setAttributes([.posixPermissions: 0o600], ofItemAtPath: path.path)
-        print("已写入 \(path.path)（\(key.count) 字符，0600）")
+        guard KeychainStore.set(key) else {
+            print("写入 Keychain 失败")
+            return 1
+        }
+        print("已写入 Keychain（\(key.count) 字符）")
         return 0
     }
 }

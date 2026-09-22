@@ -61,6 +61,14 @@ final class SettingsModel: ObservableObject {
     // MARK: 历史
     @Published var history: [HistoryEntry]?
     @Published var copiedId: String?
+    @Published var historyQuery = ""
+
+    // MARK: 当前页签（记入 UserDefaults，下次打开设置窗恢复）
+    @Published var page: Page = Page(rawValue: UserDefaults.standard.string(forKey: "settings.page") ?? "") ?? .voice {
+        didSet {
+            UserDefaults.standard.set(page.rawValue, forKey: "settings.page")
+        }
+    }
 
     private var saveTask: Task<Void, Never>?
     private var keyMonitor: Any?
@@ -109,7 +117,14 @@ final class SettingsModel: ObservableObject {
         voice["provider"] = "doubao"
         voice["enabled"] = enabled
         voice["credentialMode"] = credentialMode == "legacy" ? "legacy" : "api-key"
-        voice["apiKey"] = apiKey.trimmingCharacters(in: .whitespaces)
+        // API Key 只存 Keychain，settings.json 不再落明文（apiKey 字段写空串）
+        let trimmedKey = apiKey.trimmingCharacters(in: .whitespaces)
+        if trimmedKey.isEmpty {
+            KeychainStore.delete()
+        } else {
+            KeychainStore.set(trimmedKey)
+        }
+        voice["apiKey"] = ""
         voice["appId"] = appId.trimmingCharacters(in: .whitespaces)
         voice["accessToken"] = accessToken.trimmingCharacters(in: .whitespaces)
         voice["resourceId"] = resourceId.trimmingCharacters(in: .whitespaces)
@@ -545,6 +560,37 @@ private struct HistoryRowView: View {
     }
 }
 
+/// 历史搜索框（对齐 Electron SettingsApp 输入框：min-w-180、rounded-md、border-border、px-3 py-1.5、text-xs）
+private struct HistorySearchField: View {
+    @Binding var text: String
+    @State private var hovering = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12))
+                .foregroundColor(Color.sottoMutedText)
+            TextField("搜索历史记录", text: $text)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+            if !text.isEmpty {
+                Button(action: { text = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(Color.sottoMutedText)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 12) // px-3
+        .padding(.vertical, 6) // py-1.5
+        .frame(minWidth: 180) // min-w-180
+        .background(RoundedRectangle(cornerRadius: 6).fill(hovering ? Color.sottoMutedBg.opacity(0.4) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1)) // border-border
+        .onHover { hovering in self.hovering = hovering }
+    }
+}
+
 private struct HistoryActionButton: View {
     let systemName: String
     let iconColor: Color
@@ -573,7 +619,6 @@ private struct HistoryActionButton: View {
 
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
-    @State private var page: SettingsModel.Page = .voice
     @State private var hoveredPage: SettingsModel.Page?
 
     var body: some View {
@@ -602,7 +647,7 @@ struct SettingsView: View {
 
     private var header: some View {
         HStack(spacing: 12) {
-            Text(page.label).font(.system(size: 14, weight: .semibold))
+            Text(model.page.label).font(.system(size: 14, weight: .semibold))
             if !saveIndicator.isEmpty {
                 Text(saveIndicator)
                     .font(.system(size: 12))
@@ -616,25 +661,25 @@ struct SettingsView: View {
     }
 
     private func sidebarBackground(for item: SettingsModel.Page) -> Color {
-        if page == item { return Color.sottoPrimary.opacity(0.1) }
+        if model.page == item { return Color.sottoPrimary.opacity(0.1) }
         if hoveredPage == item { return Color.sottoMutedBg }
         return .clear
     }
 
     private func sidebarForeground(for item: SettingsModel.Page) -> Color {
-        page == item ? .sottoPrimary : (hoveredPage == item ? .sottoForeground : .sottoMutedText)
+        model.page == item ? .sottoPrimary : (hoveredPage == item ? .sottoForeground : .sottoMutedText)
     }
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 2) {
             ForEach(SettingsModel.Page.allCases) { item in
-                Button(action: { page = item }) {
+                Button(action: { model.page = item }) {
                     HStack(spacing: 10) {
                         Image(systemName: item.icon)
                             .font(.system(size: 13))
                             .frame(width: 16)
                         Text(item.label).font(.system(size: 13))
-                            .fontWeight(page == item ? .medium : .regular)
+                            .fontWeight(model.page == item ? .medium : .regular)
                         Spacer()
                     }
                     .padding(.horizontal, 10)
@@ -660,7 +705,7 @@ struct SettingsView: View {
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
-                switch page {
+                switch model.page {
                 case .voice: voicePage
                 case .history: historyPage
                 case .general: generalPage
@@ -860,6 +905,20 @@ struct SettingsView: View {
             }
             .onAppear { model.loadHistory() }
 
+            // 搜索框（对齐 Electron SettingsApp 输入框：min-w-180、rounded-md、border-border、px-3 py-1.5、text-xs）
+            if model.history != nil && !(model.history?.isEmpty ?? true) {
+                HStack(spacing: 10) {
+                    HistorySearchField(text: $model.historyQuery)
+                    if !model.historyQuery.isEmpty, let history = model.history {
+                        let matched = filteredHistory.count
+                        Text(matched == history.count ? "\(matched) 条" : "匹配 \(matched) 条 / 共 \(history.count) 条")
+                            .font(.system(size: 12))
+                            .foregroundColor(Color.sottoMutedText)
+                    }
+                    Spacer()
+                }
+            }
+
             if let history = model.history {
                 if history.isEmpty {
                     VStack(spacing: 6) {
@@ -870,9 +929,18 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 64)
                     .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoBorder, style: StrokeStyle(lineWidth: 1, dash: [4])))
+                } else if filteredHistory.isEmpty {
+                    VStack(spacing: 6) {
+                        Text("没有匹配的记录").font(.system(size: 14)).foregroundColor(Color.sottoMutedText)
+                        Text("换个关键词试试，或清空搜索框查看全部记录")
+                            .font(.system(size: 12)).foregroundColor(Color.sottoMutedText.opacity(0.7))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 64)
+                    .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoBorder, style: StrokeStyle(lineWidth: 1, dash: [4])))
                 } else {
                     VStack(spacing: 8) {
-                        ForEach(history) { entry in
+                        ForEach(filteredHistory) { entry in
                             historyRow(entry)
                         }
                     }
@@ -885,6 +953,14 @@ struct SettingsView: View {
                 }.padding(.vertical, 64)
             }
         }
+    }
+
+    /// 搜索过滤：text 包含即命中，大小写不敏感；查询为空返回全量
+    private var filteredHistory: [HistoryEntry] {
+        guard let history = model.history else { return [] }
+        let query = model.historyQuery.trimmingCharacters(in: .whitespaces)
+        guard !query.isEmpty else { return history }
+        return history.filter { $0.text.range(of: query, options: .caseInsensitive) != nil }
     }
 
     private func historyRow(_ entry: HistoryEntry) -> some View {
@@ -1122,6 +1198,7 @@ struct SettingsView: View {
 @MainActor
 final class SettingsPanel {
     private var window: NSWindow?
+    private var observers: [NSObjectProtocol] = []
     let model = SettingsModel()
 
     func show() {
@@ -1144,11 +1221,37 @@ final class SettingsPanel {
         window.isMovableByWindowBackground = true
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
         window.center()
+        restoreFrame(window) // 上次位置优先，不在屏幕内则回退 center
         window.isReleasedWhenClosed = false
         alignTrafficLights(window)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         self.window = window
+
+        // 记住位置：移动/关闭时写入 UserDefaults（"settings.frame"）；页签在 SettingsModel.page 持久化
+        let center = NotificationCenter.default
+        observers.append(center.addObserver(forName: NSWindow.didMoveNotification, object: window, queue: .main) { _ in
+            MainActor.assumeIsolated { self.saveFrame() }
+        })
+        observers.append(center.addObserver(forName: NSWindow.willCloseNotification, object: window, queue: .main) { _ in
+            MainActor.assumeIsolated { self.saveFrame() }
+        })
+    }
+
+    private func saveFrame() {
+        guard let window else { return }
+        let f = window.frame
+        UserDefaults.standard.set("\(f.origin.x),\(f.origin.y),\(f.width),\(f.height)", forKey: "settings.frame")
+    }
+
+    private func restoreFrame(_ window: NSWindow) {
+        guard let saved = UserDefaults.standard.string(forKey: "settings.frame") else { return }
+        let parts = saved.split(separator: ",").compactMap { Double($0) }
+        guard parts.count == 4, parts[2] >= window.minSize.width, parts[3] >= window.minSize.height else { return }
+        let frame = NSRect(x: parts[0], y: parts[1], width: parts[2], height: parts[3])
+        // 恢复前确认 frame 还在某块屏幕内（接了外接屏后拔掉的情况），否则回退 center
+        guard NSScreen.screens.contains(where: { $0.frame.intersects(frame) }) else { return }
+        window.setFrame(frame, display: false)
     }
 
     /// 交交通灯位置精确对齐 Electron 版 trafficLightPosition {x:16, y:16}
