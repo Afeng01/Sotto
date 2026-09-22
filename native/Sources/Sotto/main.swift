@@ -41,6 +41,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             print("[快捷键] 重新注册 \(current.hotkey) → \(ok ? "成功" : "失败")")
         }
 
+        // 浮窗错误态的“打开设置”入口（对齐 Electron OPEN_SETTINGS_WINDOW IPC）
+        NotificationCenter.default.addObserver(forName: .sottoOpenSettings, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.openSettings() }
+        }
+
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         item.button?.image = NSImage(systemSymbolName: "mic", accessibilityDescription: "呦呦")
         let menu = NSMenu()

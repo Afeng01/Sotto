@@ -349,10 +349,10 @@ private struct SottoTextField: View {
             }
         }
         .textFieldStyle(.plain)
-        .font(.system(size: 13))
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
-        .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+        .font(.system(size: 14))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1))
         .overlay(alignment: .trailing) {
             if secure {
@@ -375,8 +375,8 @@ private struct SectionCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.8)
+                .font(.system(size: 12, weight: .semibold))
+                .tracking(0.6)
                 .foregroundColor(Color.sottoMutedText)
             content()
         }
@@ -390,11 +390,11 @@ private struct FieldRow<Control: View>: View {
     @ViewBuilder let control: () -> Control
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(label).font(.system(size: 13))
+                Text(label).font(.system(size: 14))
                 if let hint {
-                    Text(hint).font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    Text(hint).font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 }
             }
             Spacer(minLength: 16)
@@ -410,7 +410,7 @@ private struct StackedField: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(hint).font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+            Text(hint).font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
             field()
         }
     }
@@ -424,15 +424,148 @@ private struct SottoToggle: View {
             ZStack(alignment: .leading) {
                 Capsule()
                     .fill(checked ? Color.sottoPrimary : Color.sottoBorder)
-                    .frame(width: 32, height: 18)
+                    .frame(width: 36, height: 20)
                 Circle()
                     .fill(Color.white)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 16, height: 16)
                     .shadow(radius: 1)
-                    .offset(x: checked ? 16 : 2)
+                    .offset(x: checked ? 18 : 2)
             }
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// 分段控件（对齐 Electron SettingsApp 凭证方式：rounded-lg 边框内两枚按钮，选中项填充 primary）
+private struct SottoSegmented: View {
+    let options: [(String, String)]
+    @Binding var selection: String
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(options, id: \.0) { value, label in
+                Button(action: { selection = value }) {
+                    Text(label)
+                        .font(.system(size: 12))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(selection == value ? Color.sottoPrimary : Color.clear)
+                        .foregroundColor(selection == value ? Color.white : Color.sottoMutedText)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoBorder, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+/// 下拉选择（对齐 Electron 的 <select class="selectClass">：max-w-200、rounded-md 边框、text-xs）
+private struct SottoSelect: View {
+    let options: [(String, String)]
+    @Binding var selection: String
+
+    var body: some View {
+        Menu {
+            ForEach(options, id: \.0) { value, label in
+                Button(label) { selection = value }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(options.first(where: { $0.0 == selection })?.1 ?? selection)
+                    .font(.system(size: 12))
+                    .foregroundColor(.sottoForeground)
+                    .lineLimit(1)
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 8, weight: .medium))
+                    .foregroundColor(.sottoMutedText)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(width: 200)
+            .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
+            .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize()
+    }
+}
+
+/// 听写历史行（对齐 Electron：边框卡片、无底色图标按钮 hover 才显 muted、hover 边框 ring/50）
+private struct HistoryRowView: View {
+    let entry: HistoryEntry
+    let copied: Bool
+    let onCopy: () -> Void
+    let onDelete: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .top, spacing: 12) {
+                Text(entry.text)
+                    .font(.system(size: 14))
+                    .lineSpacing(2) // leading-5
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 4) {
+                    HistoryActionButton(
+                        systemName: copied ? "checkmark.circle" : "doc.on.doc",
+                        iconColor: copied ? .green : Color.sottoMutedText,
+                        highlighted: hovering,
+                        action: onCopy
+                    )
+                    HistoryActionButton(
+                        systemName: "trash",
+                        iconColor: Color.sottoMutedText,
+                        highlighted: hovering,
+                        action: onDelete
+                    )
+                }
+            }
+            HStack(spacing: 8) {
+                Text("\(SettingsView.formatTime(entry.createdAt))")
+                Text("·")
+                Text("\(entry.mode == "cursor" ? "写入光标" : "剪贴板")")
+            }
+            .font(.system(size: 11))
+            .foregroundColor(Color.sottoMutedText.opacity(0.7))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(hovering ? Color.sottoPrimary.opacity(0.5) : Color.sottoBorder, lineWidth: 1)
+        )
+        .onHover { hovering in self.hovering = hovering }
+    }
+}
+
+private struct HistoryActionButton: View {
+    let systemName: String
+    let iconColor: Color
+    let highlighted: Bool
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 12))
+                .foregroundColor(iconColor)
+                .frame(width: 28, height: 28)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(hovering && highlighted ? Color.sottoMutedBg : Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering in self.hovering = hovering }
     }
 }
 
@@ -441,6 +574,7 @@ private struct SottoToggle: View {
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
     @State private var page: SettingsModel.Page = .voice
+    @State private var hoveredPage: SettingsModel.Page?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -452,7 +586,7 @@ struct SettingsView: View {
                 content
             }
         }
-        .frame(width: 760, height: 600)
+        .frame(width: 760, height: 640)
         .background(Color.white)
     }
 
@@ -464,18 +598,28 @@ struct SettingsView: View {
     }
 
     private var header: some View {
-        HStack {
-            Text(page.label).font(.system(size: 13, weight: .semibold))
+        HStack(spacing: 12) {
+            Text(page.label).font(.system(size: 14, weight: .semibold))
             if !saveIndicator.isEmpty {
                 Text(saveIndicator)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(model.saveState.hasPrefix("error") ? Color.sottoDestructive : Color.sottoMutedText)
             }
             Spacer()
         }
-        .padding(.leading, 80) // 避开交通灯
+        .padding(.leading, 84) // 避开交通灯
         .padding(.trailing, 24)
-        .frame(height: 44)
+        .frame(height: 48)
+    }
+
+    private func sidebarBackground(for item: SettingsModel.Page) -> Color {
+        if page == item { return Color.sottoPrimary.opacity(0.1) }
+        if hoveredPage == item { return Color.sottoMutedBg }
+        return .clear
+    }
+
+    private func sidebarForeground(for item: SettingsModel.Page) -> Color {
+        page == item ? .sottoPrimary : (hoveredPage == item ? .sottoForeground : .sottoMutedText)
     }
 
     private var sidebar: some View {
@@ -484,23 +628,27 @@ struct SettingsView: View {
                 Button(action: { page = item }) {
                     HStack(spacing: 10) {
                         Image(systemName: item.icon)
-                            .font(.system(size: 12))
+                            .font(.system(size: 13))
                             .frame(width: 16)
                         Text(item.label).font(.system(size: 13))
+                            .fontWeight(page == item ? .medium : .regular)
                         Spacer()
                     }
                     .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(RoundedRectangle(cornerRadius: 6).fill(page == item ? Color.sottoPrimary.opacity(0.1) : Color.clear))
-                    .foregroundColor(page == item ? Color.sottoPrimary : Color.sottoMutedText)
+                    .padding(.vertical, 6)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(sidebarBackground(for: item)))
+                    .foregroundColor(sidebarForeground(for: item))
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .onHover { hovering in
+                    hoveredPage = hovering ? item : (hoveredPage == item ? nil : hoveredPage)
+                }
             }
             Spacer()
         }
         .padding(.horizontal, 10)
-        .padding(.top, 10)
+        .padding(.top, 12)
         .padding(.bottom, 12)
         .frame(width: 176, alignment: .top)
     }
@@ -517,10 +665,10 @@ struct SettingsView: View {
                 case .about: aboutPage
                 }
             }
-            .padding(.horizontal, 24)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
-            .frame(maxWidth: 560, alignment: .leading)
+            .padding(.horizontal, 28)
+            .padding(.top, 24)
+            .padding(.bottom, 40)
+            .frame(maxWidth: 520, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
         }
     }
@@ -538,12 +686,11 @@ struct SettingsView: View {
                             SottoToggle(checked: $model.enabled).onChange(of: model.enabled) { _ in model.persistVoice() }
                         }
                         FieldRow(label: "凭证方式", hint: "新版控制台只需要一个 API Key；旧版需要 APP ID + Access Token。") {
-                            Picker("", selection: $model.credentialMode) {
-                                Text("新版控制台").tag("api-key")
-                                Text("旧版控制台").tag("legacy")
-                            }
-                            .pickerStyle(.segmented)
-                            .frame(width: 190)
+                            SottoSegmented(
+                                options: [("api-key", "新版控制台"), ("legacy", "旧版控制台")],
+                                selection: $model.credentialMode
+                            )
+                            .onChange(of: model.credentialMode) { _ in model.persistVoice() }
                         }
 
                         if model.credentialMode == "legacy" {
@@ -556,7 +703,7 @@ struct SettingsView: View {
                                             .onChange(of: model.apiKey) { _ in model.scheduleVoiceSave() }
                                         if SottoSettings.looksLikeCiphertext(model.apiKey) {
                                             Text("检测到这是 Electron 版加密后的密文，原生版无法使用——请删除后重新粘贴明文 API Key")
-                                                .font(.system(size: 11))
+                                                .font(.system(size: 12))
                                                 .foregroundColor(Color.sottoDestructive)
                                         }
                                     }
@@ -570,29 +717,21 @@ struct SettingsView: View {
                         }
 
                         FieldRow(label: "连接模式", hint: "优化版只在结果变化时返回新包，实时体验更好。") {
-                            Picker("", selection: $model.endpointMode) {
-                                Text("双向流式优化版").tag("async")
-                                Text("双向流式标准版").tag("duplex")
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 200)
+                            SottoSelect(
+                                options: [("async", "双向流式优化版"), ("duplex", "双向流式标准版")],
+                                selection: $model.endpointMode
+                            )
                             .onChange(of: model.endpointMode) { _ in model.persistVoice() }
                         }
 
                         FieldRow(label: "识别语言", hint: "自动识别适合中英文和方言混合输入。") {
-                            Picker("", selection: Binding(
-                                get: { model.language.isEmpty ? "auto" : model.language },
-                                set: { model.language = $0 == "auto" ? "" : $0; model.persistVoice() }
-                            )) {
-                                Text("自动识别").tag("auto")
-                                Text("中文普通话").tag("zh-CN")
-                                Text("英语").tag("en-US")
-                                Text("粤语").tag("yue-CN")
-                                Text("日语").tag("ja-JP")
-                                Text("韩语").tag("ko-KR")
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 200)
+                            SottoSelect(
+                                options: [("auto", "自动识别"), ("zh-CN", "中文普通话"), ("en-US", "英语"), ("yue-CN", "粤语"), ("ja-JP", "日语"), ("ko-KR", "韩语")],
+                                selection: Binding(
+                                    get: { model.language.isEmpty ? "auto" : model.language },
+                                    set: { model.language = $0 == "auto" ? "" : $0; model.persistVoice() }
+                                )
+                            )
                         }
 
                         StackedField(hint: "自定义热词 — 每行或逗号分隔一个词，直传给豆包，用于改善产品名、技术词和人名识别。") {
@@ -603,7 +742,7 @@ struct SettingsView: View {
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
                                     .scrollContentBackground(.hidden)
-                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.white))
+                                    .background(RoundedRectangle(cornerRadius: 6).fill(Color.clear))
                                     .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1))
                                     .onChange(of: model.customHotwords) { _ in model.scheduleVoiceSave() }
                             )
@@ -611,7 +750,6 @@ struct SettingsView: View {
 
                         testRow
                     }
-                    .padding(4)
                 )
             }
         }
@@ -619,7 +757,7 @@ struct SettingsView: View {
 
     private var legacyCredentials: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("旧版控制台凭证").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+            Text("旧版控制台凭证").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
             StackedField(hint: "豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。") {
                 AnyView(SottoTextField(text: $model.appId, placeholder: "请输入 APP ID")
                     .onChange(of: model.appId) { _ in model.scheduleVoiceSave() })
@@ -655,11 +793,12 @@ struct SettingsView: View {
 
             if !model.testStatus.isEmpty {
                 Label {
-                    Text(model.testStatus).font(.system(size: 11))
+                    Text(model.testStatus).font(.system(size: 12))
+                        .foregroundColor(model.testOk ? Color.sottoMutedText : Color.sottoDestructive)
                 } icon: {
                     Image(systemName: model.testOk ? "checkmark.circle" : "xmark.circle")
-                        .font(.system(size: 11))
-                        .foregroundColor(model.testOk ? .green : Color.sottoDestructive)
+                        .font(.system(size: 12))
+                        .foregroundColor(model.testOk ? Color.sottoMutedText : Color.sottoDestructive)
                 }
             }
             Spacer()
@@ -669,27 +808,27 @@ struct SettingsView: View {
     private var guideCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             Label("配置指南（新版控制台，约 2 分钟）", systemImage: "mic.fill")
-                .font(.system(size: 11, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundColor(.primary)
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
-                    Text("1. 打开 ").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    Text("1. 打开 ").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                     Button("火山引擎控制台 - 开通管理") { model.openVolcengineConsole() }
                         .font(.system(size: 12))
                         .buttonStyle(.plain)
                         .foregroundColor(Color.sottoPrimary)
                         .underline()
-                    Text("，开通「流式语音识别 2.0」（赠送 20 小时免费额度）。").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    Text("，开通「流式语音识别 2.0」（赠送 20 小时免费额度）。").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 }
                 Text("2. 左侧菜单点「API Key」，创建并复制一个 API Key。")
-                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 Text("3. 下面「凭证方式」选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。")
-                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 Text("4. 点「测试连接」，显示成功就绪。")
-                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
             }
             Text("如果你还在用旧版控制台（有 APP ID 和 Access Token），把凭证方式切到「旧版控制台」填写即可。")
-                .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -704,7 +843,7 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Text("最近 100 条成功输出的听写记录，仅保存在本机。")
-                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 Spacer()
                 if let history = model.history, !history.isEmpty {
                     Button("清空历史") { model.clearHistory() }
@@ -721,12 +860,12 @@ struct SettingsView: View {
             if let history = model.history {
                 if history.isEmpty {
                     VStack(spacing: 6) {
-                        Text("还没有听写记录").font(.system(size: 13)).foregroundColor(Color.sottoMutedText)
+                        Text("还没有听写记录").font(.system(size: 14)).foregroundColor(Color.sottoMutedText)
                         Text("按全局快捷键说一段话，成功输出的内容会出现在这里")
-                            .font(.system(size: 11)).foregroundColor(Color.sottoMutedText.opacity(0.7))
+                            .font(.system(size: 12)).foregroundColor(Color.sottoMutedText.opacity(0.7))
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 56)
+                    .padding(.vertical, 64)
                     .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoBorder, style: StrokeStyle(lineWidth: 1, dash: [4])))
                 } else {
                     VStack(spacing: 8) {
@@ -738,56 +877,30 @@ struct SettingsView: View {
             } else {
                 HStack {
                     Spacer()
-                    Text("加载中...").font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                    Text("加载中...").font(.system(size: 14)).foregroundColor(Color.sottoMutedText)
                     Spacer()
-                }.padding(.vertical, 56)
+                }.padding(.vertical, 64)
             }
         }
     }
 
     private func historyRow(_ entry: HistoryEntry) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .top) {
-                Text(entry.text)
-                    .font(.system(size: 13))
-                    .lineLimit(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                HStack(spacing: 4) {
-                    Button(action: { model.copyEntry(entry) }) {
-                        Image(systemName: model.copiedId == entry.id ? "checkmark.circle" : "doc.on.doc")
-                            .font(.system(size: 12))
-                            .foregroundColor(model.copiedId == entry.id ? .green : Color.sottoMutedText)
-                            .frame(width: 28, height: 28)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.sottoMutedBg.opacity(0.6)))
-                    }
-                    .buttonStyle(.plain)
-                    Button(action: { model.deleteEntry(entry) }) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.sottoMutedText)
-                            .frame(width: 28, height: 28)
-                            .background(RoundedRectangle(cornerRadius: 6).fill(Color.sottoMutedBg.opacity(0.6)))
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            Text("\(Self.formatTime(entry.createdAt)) · \(entry.mode == "cursor" ? "写入光标" : "剪贴板")")
-                .font(.system(size: 10))
-                .foregroundColor(Color.sottoMutedText.opacity(0.7))
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color.white))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoBorder, lineWidth: 1))
+        HistoryRowView(
+            entry: entry,
+            copied: model.copiedId == entry.id,
+            onCopy: { model.copyEntry(entry) },
+            onDelete: { model.deleteEntry(entry) }
+        )
     }
 
     static func formatTime(_ milliseconds: Double) -> String {
         let date = Date(timeIntervalSince1970: milliseconds / 1000)
         let formatter = DateFormatter()
+        // 对齐 Electron SettingsApp formatHistoryTime：今天 HH:mm / M月D日 HH:mm
         if Calendar.current.isDateInToday(date) {
-            formatter.dateFormat = "HH:mm"
+            formatter.dateFormat = "'今天' HH:mm"
         } else {
-            formatter.dateFormat = "MM-dd HH:mm"
+            formatter.dateFormat = "M月d日 HH:mm"
         }
         return formatter.string(from: date)
     }
@@ -812,6 +925,10 @@ struct SettingsView: View {
                     }
                 )
             }
+            // 对齐 Electron：<div className="my-6 h-px bg-border/70" />
+            Rectangle()
+                .fill(Color.sottoBorder.opacity(0.7))
+                .frame(height: 1)
             SectionCard(title: "启动") {
                 AnyView(
                     FieldRow(label: "开机自启", hint: "登录时隐藏启动，菜单栏可直接使用。") {
@@ -830,9 +947,9 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("全局快捷键").font(.system(size: 13))
                     Text(model.recordingHotkey ? "按下想要的组合键，Esc 取消" : "点击右侧开始录制，按下想要的组合键即可。")
-                        .font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
+                        .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                     if let error = model.hotkeyError {
-                        Text(error).font(.system(size: 11)).foregroundColor(Color.sottoDestructive)
+                        Text(error).font(.system(size: 12)).foregroundColor(Color.sottoDestructive)
                     }
                 }
                 Spacer()
@@ -848,7 +965,7 @@ struct SettingsView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .background(RoundedRectangle(cornerRadius: 6).fill(
-                            model.recordingHotkey ? Color.sottoPrimary.opacity(0.1) : Color.white))
+                            model.recordingHotkey ? Color.sottoPrimary.opacity(0.05) : Color.clear))
                         .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(
                             model.recordingHotkey ? Color.sottoPrimary : Color.sottoBorder,
                             lineWidth: model.recordingHotkey ? 2 : 1))
@@ -863,7 +980,7 @@ struct SettingsView: View {
                         Text(label)
                             .font(.system(size: 11))
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 3)
+                            .padding(.vertical, 2)
                             .background(Capsule().fill(model.hotkey == value ? Color.sottoPrimary.opacity(0.1) : Color.clear))
                             .overlay(Capsule().strokeBorder(model.hotkey == value ? Color.sottoPrimary.opacity(0.4) : Color.sottoBorder, lineWidth: 1))
                             .foregroundColor(model.hotkey == value ? Color.sottoPrimary : Color.sottoMutedText)
@@ -894,7 +1011,8 @@ struct SettingsView: View {
                         icon: model.micPermission == .authorized ? "mic" : (model.micPermission == .denied ? "mic.slash" : "mic"),
                         iconColor: model.micPermission == .authorized ? .green : (model.micPermission == .denied ? Color.sottoDestructive : Color.sottoMutedText),
                         title: "麦克风",
-                        status: statusText
+                        status: statusText,
+                        statusIsError: model.micPermission == .denied
                     ) {
                         if model.micPermission == .notDetermined {
                             Button("允许麦克风权限") { model.requestMic() }
@@ -909,7 +1027,8 @@ struct SettingsView: View {
                         icon: "hand.tap",
                         iconColor: model.accessibilityGranted ? .green : Color.sottoDestructive,
                         title: "辅助功能",
-                        status: model.accessibilityGranted ? "已授权" : "未授权，用于把文本写入当前光标位置"
+                        status: model.accessibilityGranted ? "已授权" : "未授权，用于把文本写入当前光标位置",
+                        statusIsError: !model.accessibilityGranted
                     ) {
                         if !model.accessibilityGranted {
                             Button("去授权") { model.openAccessibilitySettings() }
@@ -935,17 +1054,20 @@ struct SettingsView: View {
     }
 
     private func permissionRow<Control: View>(
-        icon: String, iconColor: Color, title: String, status: String,
+        icon: String, iconColor: Color, title: String, status: String, statusIsError: Bool = false,
         @ViewBuilder control: () -> Control
     ) -> some View {
-        HStack {
+        HStack(spacing: 8) {
             Label {
-                Text(title).font(.system(size: 13))
+                Text(title).font(.system(size: 14))
             } icon: {
-                Image(systemName: icon).font(.system(size: 13)).foregroundColor(iconColor)
+                Image(systemName: icon).font(.system(size: 14)).foregroundColor(iconColor)
             }
-            Text(status).font(.system(size: 11)).foregroundColor(Color.sottoMutedText)
             Spacer()
+            if !status.isEmpty {
+                Text(status).font(.system(size: 12))
+                    .foregroundColor(statusIsError ? Color.sottoDestructive : Color.sottoMutedText)
+            }
             control()
         }
         .padding(.horizontal, 14)
@@ -964,14 +1086,14 @@ struct SettingsView: View {
                         .fill(Color.sottoPrimary.opacity(0.1))
                         .frame(width: 64, height: 64)
                     Image(systemName: "mic")
-                        .font(.system(size: 30))
+                        .font(.system(size: 32))
                         .foregroundColor(Color.sottoPrimary)
                 }
-                Text("呦呦 Sotto").font(.system(size: 17, weight: .semibold)).padding(.top, 16)
+                Text("呦呦 Sotto").font(.system(size: 18, weight: .semibold)).padding(.top, 16)
                 Text("版本 \(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev")")
-                    .font(.system(size: 11)).foregroundColor(Color.sottoMutedText).padding(.top, 4)
+                    .font(.system(size: 12)).foregroundColor(Color.sottoMutedText).padding(.top, 4)
                 Text("独立常驻的系统级语音输入应用。名字取自《诗经·小雅》「呦呦鹿鸣」——鹿鸣声即声音，按下快捷键，呦呦便开始听。")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundColor(Color.sottoMutedText)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
@@ -1006,7 +1128,7 @@ final class SettingsPanel {
             return
         }
         let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 760, height: 600),
+            contentRect: NSRect(x: 0, y: 0, width: 760, height: 640),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -1015,6 +1137,7 @@ final class SettingsPanel {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.backgroundColor = .white
+        window.minSize = NSSize(width: 660, height: 520) // 对齐 Electron minWidth/minHeight
         window.isMovableByWindowBackground = true
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
         window.center()
