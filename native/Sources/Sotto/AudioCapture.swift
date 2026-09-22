@@ -9,6 +9,8 @@ final class AudioCapture {
     private let chunkBytes = 3200 // 16000 samples/s * 2 bytes * 0.1s
 
     var onChunk: ((Data) -> Void)?
+    /// 实时音量（0...1，主线程回调），驱动浮窗声波条
+    var onVolume: ((Float) -> Void)?
 
     func start() throws {
         let input = engine.inputNode
@@ -23,6 +25,7 @@ final class AudioCapture {
 
         input.installTap(onBus: 0, bufferSize: 1024, format: hwFormat) { [weak self] buffer, _ in
             guard let self else { return }
+            self.reportVolume(buffer)
             let data = self.convertTo16kInt16(buffer)
             DispatchQueue.main.async { self.ingest(data) }
         }
@@ -35,6 +38,25 @@ final class AudioCapture {
         engine.inputNode.removeTap(onBus: 0)
         engine.stop()
         converter = nil
+    }
+
+    /// RMS 音量（对齐 Electron VoiceCaptureApp 的 vol：0…1，增益 6 让正常说话能到满幅）
+    private func reportVolume(_ buffer: AVAudioPCMBuffer) {
+        guard let onVolume, let ch = buffer.floatChannelData?[0] else { return }
+        let n = Int(buffer.frameLength)
+        guard n > 0 else { return }
+        var sum: Float = 0
+        var count: Float = 0
+        var i = 0
+        while i < n {
+            let v = ch[i]
+            sum += v * v
+            count += 1
+            i += 4 // 采样 1/4 足够
+        }
+        let rms = (sum / max(count, 1)).squareRoot()
+        let vol = min(1, rms * 6)
+        DispatchQueue.main.async { onVolume(vol) }
     }
 
     private func ingest(_ data: Data) {

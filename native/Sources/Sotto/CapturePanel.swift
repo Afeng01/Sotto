@@ -39,6 +39,11 @@ final class CapturePanel {
         set { viewModel.status = newValue }
     }
 
+    var volume: Double {
+        get { viewModel.volume }
+        set { viewModel.volume = newValue }
+    }
+
     var statusIsError: Bool {
         get { viewModel.statusIsError }
         set { viewModel.statusIsError = newValue }
@@ -135,6 +140,8 @@ final class TranscriptViewModel: ObservableObject {
     @Published var text = ""
     @Published var status = ""
     @Published var statusIsError = false
+    /// 实时音量（0…1），由 AudioCapture.onVolume 驱动（对齐 Electron 真实音量声波）
+    @Published var volume: Double = 0
 
     var onCommit: ((String) -> Void)?
 }
@@ -231,7 +238,7 @@ struct TranscriptPopoverView: View {
         ZStack {
             switch phase {
             case .recording:
-                VolumeWaveform()
+                VolumeWaveform(volume: viewModel.volume)
             case .connecting, .stopping:
                 Spinner()   // Loader2 size-3.5 animate-spin text-primary
             case .error:
@@ -294,25 +301,22 @@ struct TranscriptPopoverView: View {
 }
 
 /// 录音中的音量波形（VoiceCaptureApp.tsx L368-375：5 根 3px 宽圆角条，间距 3px，primary 色）。
-/// Electron 用真实音量驱动高度；原生采集逻辑不可改动，这里用平滑伪随机动画近似。
+/// 高度 = max(4, vol * scale * 16)，vol 由 AudioCapture RMS 实时驱动（1:1 对齐 Electron）。
 private struct VolumeWaveform: View {
+    let volume: Double
     private let scales: [CGFloat] = [0.6, 1, 0.75, 0.9, 0.5]
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30.0)) { timeline in
-            let t = timeline.date.timeIntervalSinceReferenceDate
-            HStack(spacing: 3) {
-                ForEach(scales.indices, id: \.self) { i in
-                    let envelope = 0.55 + 0.45 * sin(t * 2 * .pi / 0.9 + Double(i) * 1.1)
-                    let wobble = 0.5 + 0.5 * sin(t * 2 * .pi / 0.31 + Double(i) * 2.3)
-                    let volume = max(0.05, min(1, envelope * wobble))
-                    Capsule()
-                        .fill(Color.sottoPrimary)
-                        .frame(width: 3, height: max(4, round(volume * scales[i] * 16)))
-                }
+        HStack(spacing: 3) {
+            ForEach(scales.indices, id: \.self) { i in
+                let v = max(0.05, min(1, volume))
+                Capsule()
+                    .fill(Color.sottoPrimary)
+                    .frame(width: 3, height: max(4, round(v * scales[i] * 16)))
+                    .animation(.linear(duration: 0.05), value: volume)
             }
-            .frame(height: 16, alignment: .center)
         }
+        .frame(height: 16, alignment: .center)
     }
 }
 

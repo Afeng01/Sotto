@@ -110,6 +110,9 @@ final class DictationCoordinator {
         capture.onChunk = { [weak self] chunk in
             self?.client?.sendAudio(chunk)
         }
+        capture.onVolume = { [weak self] vol in
+            self?.panel.volume = Double(vol)
+        }
         do {
             try capture.start()
             print("[音频] 采集已启动")

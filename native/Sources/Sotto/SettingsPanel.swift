@@ -588,6 +588,9 @@ struct SettingsView: View {
         }
         .frame(width: 760, height: 640)
         .background(Color.white)
+        // 内容延伸到标题栏下方（Electron fullSizeContentView）：顶栏与交通灯同一行，
+        // 否则 SwiftUI 会按标题栏安全区把顶栏推下去，页面标题就不和三个按钮同行
+        .ignoresSafeArea()
     }
 
     private var saveIndicator: String {
