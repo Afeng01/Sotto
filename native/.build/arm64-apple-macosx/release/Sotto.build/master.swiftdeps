@@ -1,7 +1,7 @@
 version: "Apple Swift version 6.1.2 (swiftlang-6.1.2.1.2 clang-1700.0.13.5)"
 options: "4b0029ec3dec4b4e3327579df71e45d7d0e71d5c719d426493cda6be8e5e892a"
-build_start_time: [1790086020, 832146000]
-build_end_time: [1790086024, 808938000]
+build_start_time: [1790086581, 804976000]
+build_end_time: [1790086585, 779429000]
 inputs:
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/AudioCapture.swift": [1790085975, 356617245]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/CapturePanel.swift": [1790086015, 142951176]
@@ -11,7 +11,7 @@ inputs:
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/Gzip.swift": [1790001868, 799883609]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HistoryStore.swift": [1790034275, 7778199]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/HotkeyCenter.swift": [1790034052, 343986949]
-  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift": [1790085991, 27537510]
+  "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsPanel.swift": [1790086565, 202314064]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/SettingsStore.swift": [1790034939, 481128974]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TextInsertion.swift": [1790001681, 139400196]
   "/Users/cherry_xiao/Developer/PROJECT/PromaVoice/native/Sources/Sotto/TranscriptMerger.swift": [1790035376, 210371428]

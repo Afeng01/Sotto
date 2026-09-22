@@ -1145,8 +1145,24 @@ final class SettingsPanel {
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
         window.center()
         window.isReleasedWhenClosed = false
+        alignTrafficLights(window)
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         self.window = window
+    }
+
+    /// 交交通灯位置精确对齐 Electron 版 trafficLightPosition {x:16, y:16}
+    private func alignTrafficLights(_ window: NSWindow) {
+        guard let content = window.contentView,
+              let close = window.standardWindowButton(.closeButton),
+              let mini = window.standardWindowButton(.miniaturizeButton),
+              let zoom = window.standardWindowButton(.zoomButton) else { return }
+        for (i, button) in [close, mini, zoom].enumerated() {
+            button.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                button.topAnchor.constraint(equalTo: content.topAnchor, constant: 16),
+                button.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: CGFloat(16 + i * 20)),
+            ])
+        }
     }
 }
