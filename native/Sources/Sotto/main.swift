@@ -1,4 +1,6 @@
 import AppKit
+import AVFoundation
+import ApplicationServices
 
 // Sotto（呦呦）原生原型：Swift/AppKit，无 Electron、无 webview。
 //
@@ -15,8 +17,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let settingsPanel = SettingsPanel()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // check 模式只做握手验证，不建菜单栏/不注册热键
+        // check 模式只做握手验证，不建菜单栏/不注册热键，也不弹权限申请
         if ProcessInfo.processInfo.arguments.contains("check") { return }
+        // 首次授权流程前移：安装/启动后即主动发起系统授权（每次启动最多一次），
+        // 不等用户第一次按快捷键时才发现没权限
+        Self.bootstrapSystemPermissions()
         let settings = SottoSettings.load()
         coordinator = DictationCoordinator(settings: settings)
 
@@ -63,6 +68,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = Self.buildMainMenu()
 
         print("[启动] 原生原型就绪：菜单栏已常驻，快捷键 \(settings.hotkey) → \(hotkeyOk ? "已注册" : "注册失败")")
+    }
+
+    /// 启动时主动申请麦克风权限 + 辅助功能授权引导（每次启动各最多一次）
+    private static func bootstrapSystemPermissions() {
+        if AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined {
+            AVCaptureDevice.requestAccess(for: .audio) { granted in
+                print("[权限] 麦克风授权请求结果：\(granted ? "允许" : "拒绝")")
+            }
+        }
+        if !AXIsProcessTrusted() {
+            // kAXTrustedCheckOptionPrompt: true → 系统弹「呦呦想要控制你的电脑」引导，
+            // 用户点开后跳辅助功能列表。已授权时不重复弹。
+            let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true] as CFDictionary
+            _ = AXIsProcessTrustedWithOptions(options)
+            print("[权限] 已发起辅助功能授权引导（系统设置 → 隐私与安全性 → 辅助功能）")
+        }
     }
 
     @objc private func openSettings() {

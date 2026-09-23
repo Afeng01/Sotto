@@ -2,6 +2,7 @@ import AppKit
 import ServiceManagement
 import AVFoundation
 import CoreGraphics
+import Combine
 import SwiftUI
 
 /// 设置页模型：读写 ~/.sotto/settings.json + ~/.sotto/history.json
@@ -288,6 +289,8 @@ final class SettingsModel: ObservableObject {
     }
 
     var accessibilityGranted: Bool {
+        // 与 TextInsertion 实际用的权限预检保持一致（CGEvent Listen 权限即辅助功能权限），
+        // 状态刷新由权限页的定时轮询触发（onReceive 每秒 objectWillChange）
         CGPreflightListenEventAccess()
     }
 
@@ -643,6 +646,7 @@ private struct HistoryActionButton: View {
 struct SettingsView: View {
     @ObservedObject var model: SettingsModel
     @State private var hoveredPage: SettingsModel.Page?
+    @State private var guideExpanded = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -681,6 +685,7 @@ struct SettingsView: View {
         .padding(.leading, 84) // 避开交通灯
         .padding(.trailing, 24)
         .frame(height: 48)
+        .background(WindowDragRegion())
     }
 
     private func sidebarBackground(for item: SettingsModel.Page) -> Color {
@@ -694,7 +699,11 @@ struct SettingsView: View {
     }
 
     private var sidebar: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        // 鹿鸣反馈：侧边栏项间距太挤。Electron 版（SettingsApp.tsx nav）单项高 ≈ 32px
+        //（text-[13px] 行高 ~20 + py-1.5 上下各 6），SwiftUI Text 13pt 行高只有 ~16，
+        // 视觉上密一截。这里把单项内容高度撑到 20（minHeight: 20），项间隔从 2 加到 4，
+        // 保持 w-176 / px-10 / 圆角 6 不变。
+        VStack(alignment: .leading, spacing: 4) {
             ForEach(SettingsModel.Page.allCases) { item in
                 Button(action: { model.page = item }) {
                     HStack(spacing: 10) {
@@ -705,6 +714,7 @@ struct SettingsView: View {
                             .fontWeight(model.page == item ? .medium : .regular)
                         Spacer()
                     }
+                    .frame(minHeight: 20)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(RoundedRectangle(cornerRadius: 6).fill(sidebarBackground(for: item)))
@@ -719,7 +729,7 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(.horizontal, 10)
-        .padding(.top, 12)
+        .padding(.top, 14)
         .padding(.bottom, 12)
         .frame(width: 176, alignment: .top)
     }
@@ -881,11 +891,26 @@ struct SettingsView: View {
         }
     }
 
+    // 鹿鸣反馈：配置指南常驻太占版面，默认只留标题行，点击整行展开/收起
     private var guideCard: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Label("配置指南（新版控制台，约 2 分钟）", systemImage: "mic.fill")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.primary)
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) { guideExpanded.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Label("配置指南（新版控制台，约 2 分钟）", systemImage: "mic.fill")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(.primary)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundColor(Color.sottoMutedText)
+                        .rotationEffect(.degrees(guideExpanded ? 90 : 0))
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            if guideExpanded {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 0) {
                     Text("1. 打开 ").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
@@ -905,6 +930,7 @@ struct SettingsView: View {
             }
             Text("如果你还在用旧版控制台（有 APP ID 和 Access Token），把凭证方式切到「旧版控制台」填写即可。")
                 .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)
@@ -1018,15 +1044,15 @@ struct SettingsView: View {
         VStack(alignment: .leading, spacing: 24) {
             SectionCard(title: "听写行为") {
                 AnyView(
-                    VStack(spacing: 14) {
+                    // Electron 通用页 space-y-4 = 16px
+                    VStack(spacing: 16) {
                         hotkeyField
                         FieldRow(label: "输出方式", hint: "写入光标失败时自动保留到剪贴板。") {
-                            Picker("", selection: $model.outputMode) {
-                                Text("自动：写入当前光标").tag("auto")
-                                Text("仅复制到剪贴板").tag("clipboard")
-                            }
-                            .pickerStyle(.menu)
-                            .frame(width: 200)
+                            // 与语音输入页的连接模式/识别语言同一套自绘下拉样式（SottoSelect）
+                            SottoSelect(
+                                options: [("auto", "自动：写入当前光标"), ("clipboard", "仅复制到剪贴板")],
+                                selection: $model.outputMode
+                            )
                             .onChange(of: model.outputMode) { _ in model.persistVoice() }
                         }
                     }
@@ -1049,12 +1075,17 @@ struct SettingsView: View {
     }
 
     private var hotkeyField: some View {
+        // 对齐 Electron 通用页（SettingsApp.tsx）快捷键区块：
+        // 左侧标签 text-sm(14) + 提示 text-xs，右侧录制按钮 min-w-180 justify-between；
+        // 预设胶囊距录制行 mt-2(8)，横向 gap-1.5(6)
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("全局快捷键").font(.system(size: 13))
+                    Text("全局快捷键").font(.system(size: 14))
                     Text(model.recordingHotkey ? "按下想要的组合键，Esc 取消" : "点击右侧开始录制，按下想要的组合键即可。")
-                        .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
+                        .font(.system(size: 12))
+                        .lineSpacing(2)
+                        .foregroundColor(Color.sottoMutedText)
                     if let error = model.hotkeyError {
                         Text(error).font(.system(size: 12)).foregroundColor(Color.sottoDestructive)
                     }
@@ -1095,6 +1126,7 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
             }
+            .padding(.top, 2) // Electron mt-2 相对录制行 8px，扣掉容器 spacing 8 中的余量
         }
     }
 
@@ -1137,19 +1169,23 @@ struct SettingsView: View {
                         status: model.accessibilityGranted ? "已授权" : "未授权，用于把文本写入当前光标位置",
                         statusIsError: !model.accessibilityGranted
                     ) {
-                        if !model.accessibilityGranted {
-                            Button("去授权") { model.openAccessibilitySettings() }
+                        // 授权后也保留「系统设置」入口，方便用户随时回去检查/改状态
+                        Button(model.accessibilityGranted ? "系统设置" : "去授权") { model.openAccessibilitySettings() }
                                 .font(.system(size: 12))
                                 .buttonStyle(.plain)
                                 .padding(.horizontal, 10)
                                 .padding(.vertical, 4)
                                 .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.sottoBorder, lineWidth: 1))
-                        }
                     }
                 }
             )
         }
         .onAppear { model.objectWillChange.send() }
+        // 定时轮询：用户在系统设置里开完权限切回来时，状态要能自动刷新，
+        // 否则一直显示「未授权」（鹿鸣反馈：辅助功能开启不了/状态不更新）
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { _ in
+            model.objectWillChange.send()
+        }
     }
 
     private var statusText: String {
@@ -1221,6 +1257,20 @@ struct SettingsView: View {
     }
 }
 
+// MARK: - 窗口拖拽区
+
+/// 顶部 48pt header 专用拖拽区：mouseDownCanMoveWindow = true 让系统接管拖动窗口，
+/// 配合 isMovableByWindowBackground = false 实现只允许 header 拖窗（标准标题栏同款机制）
+private struct WindowDragRegion: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { DragView() }
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class DragView: NSView {
+        override var mouseDownCanMoveWindow: Bool { true }
+        override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    }
+}
+
 // MARK: - 窗口
 
 @MainActor
@@ -1246,7 +1296,9 @@ final class SettingsPanel {
         window.titlebarAppearsTransparent = true
         window.backgroundColor = .white
         window.minSize = NSSize(width: 660, height: 520) // 对齐 Electron minWidth/minHeight
-        window.isMovableByWindowBackground = true
+        // 鹿鸣反馈：整窗任意位置都能拖着走（点正文/按钮间隙也会拖动）。
+        // 现在只有顶部 48pt header 的拖拽区可拖（header 背景里盖了 WindowDragRegion），
+        // 其余区域正常接收点击，不再误拖窗口。
         window.contentView = NSHostingView(rootView: SettingsView(model: model))
         window.center()
         restoreFrame(window) // 上次位置优先，不在屏幕内则回退 center

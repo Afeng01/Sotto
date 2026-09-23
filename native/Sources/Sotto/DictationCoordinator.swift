@@ -103,17 +103,30 @@ final class DictationCoordinator {
             doStartCapture()
         case .notDetermined:
             panel.status = "等待麦克风权限…"
+            // 看门狗：系统授权弹窗若被忽略/未响应，10 秒后必须给出可行动提示，
+            // 不能一直卡在「等待麦克风权限…」。回调先到则取消看门狗。
+            let generation = sessionGeneration
+            var settled = false
+            let watchdog = DispatchWorkItem { [weak self] in
+                guard !settled, generation == self?.sessionGeneration else { return }
+                settled = true
+                self?.showPanelError("麦克风授权未完成，请在系统设置 → 隐私与安全性 → 麦克风 中允许呦呦后重试")
+            }
             AVCaptureDevice.requestAccess(for: .audio) { [weak self] granted in
                 DispatchQueue.main.async {
+                    guard !settled else { return }
+                    settled = true
+                    watchdog.cancel()
                     if granted {
                         self?.doStartCapture()
                     } else {
-                        self?.showPanelError("麦克风权限被拒绝，请到系统设置 → 隐私与安全性 → 麦克风 中允许呦呦")
+                        self?.showPanelError("麦克风权限被拒绝，请在系统设置 → 隐私与安全性 → 麦克风 中允许呦呦后重试")
                     }
                 }
             }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: watchdog)
         default:
-            showPanelError("麦克风权限未授权，请到系统设置 → 隐私与安全性 → 麦克风 中允许呦呦")
+            showPanelError("麦克风权限未授权，请在系统设置 → 隐私与安全性 → 麦克风 中允许呦呦后重试")
         }
     }
 
