@@ -332,9 +332,24 @@ struct TranscriptPopoverView: View {
             }
             .frame(height: CapturePanel.transcriptViewport) // 固定两行视口：满了向上滚，窗口不再变高
             .scrollIndicators(.hidden) // [scrollbar-width:none]
+            .background(HideScrollers()) // 系统「始终显示滚动条」时 scrollIndicators 无效，AppKit 层强制隐藏
             .onChange(of: viewModel.text) { _ in
                 withAnimation(nil) { proxy.scrollTo("transcript", anchor: .bottom) }
             }
+        }
+    }
+}
+
+/// 隐藏 SwiftUI ScrollView 背后 NSScrollView 的滚动条（穿越 superview 链找到宿主 NSScrollView）
+private struct HideScrollers: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView { NSView() }
+    func updateNSView(_ view: NSView, context: Context) {
+        DispatchQueue.main.async {
+            var cursor = view.superview
+            while let p = cursor, !(p is NSScrollView) { cursor = p.superview }
+            guard let sv = cursor as? NSScrollView else { return }
+            sv.hasVerticalScroller = false
+            sv.hasHorizontalScroller = false
         }
     }
 }
