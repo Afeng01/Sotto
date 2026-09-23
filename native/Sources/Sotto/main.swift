@@ -165,7 +165,8 @@ func runCheck() async -> Int32 {
 /// 长文验证封顶后窗口高度恒定、底边不动、内容持续滚动 → 外部高度扰动（模拟
 /// 约束/像素对齐类校正）→ 最终结果替换导致行数回落。每次变更后跑几帧 RunLoop，
 /// 记录 panel.frame.origin.y / size，并与下方独立实现的 Electron 期望公式逐步对比。
-/// 判定标准：封顶后高度恒定；底边 origin.y + height 漂移 ≤0.5pt；
+/// 判定标准：封顶后高度恒定；底边 frame.origin.y 漂移 ≤0.5pt（AppKit frame.origin 即窗口底边；
+/// 旧 harness 误用 origin.y + height——那是顶边，恰好掩盖了 syncHeight 顶边钉死、底边下坠的缺陷）；
 /// 每步 (x,y,w,h) 与独立期望公式一致（不一致计违规并打印）。
 @MainActor
 func runPanelTest() {
@@ -195,13 +196,13 @@ func runPanelTest() {
         return max(1, Int(ceil(wrapped.height / single - 0.05)))
     }
 
-    /// 期望 frame：height = max(110, min(560, floor((workHeight−28)/3),
+    /// 期望 frame：height = max(110, min(560, floor((workHeight−110)/3),
     /// ceil(41 + min(natural, viewportMax) + 6 + extraBuffer)))，其中
     /// natural = max(34, 8 + 转写行数×28 + 12)（转写区 scrollHeight = pt-2 8 + 行 + pb-3 12），
     /// viewportMax = max(34, maxWindowHeight − 41 − 6)，
     /// maxWindowHeight = max(75, min(max(220, floor(workHeight/3)), 41 + 4×28)) = 153，
     /// extraBuffer：natural > viewportMax（即转写 ≥4 行触顶）时 0，否则 8。
-    /// x = workArea.x + round((workArea.width−380)/2)，y 底边锚定 workArea 底 −28。
+    /// x = workArea.x + round((workArea.width−380)/2)，y（=frame.origin，即底边）锚定 workArea 底 +110（0.2.3 的 CAPTURE_BOTTOM_MARGIN）。
     func expectedFrame(transcript: String, workArea: NSRect) -> NSRect {
         let fixedHeight: CGFloat = 12 + 28 + 1      // 根容器垂直 padding + 头部 28 + 分隔线 1
         let windowBuffer: CGFloat = 6               // WINDOW_HEIGHT_BUFFER
@@ -218,11 +219,11 @@ func runPanelTest() {
         let transcriptHeight = min(natural, viewportMax)
         let extraBuffer: CGFloat = natural > viewportMax ? 0 : 8
         var height = (fixedHeight + transcriptHeight + windowBuffer + extraBuffer).rounded(.up)
-        let screenCap = max(110, ((workArea.height - 28) / 3).rounded(.down))
+        let screenCap = max(110, ((workArea.height - 110) / 3).rounded(.down))
         height = max(110, min(560, screenCap, height.rounded()))
         let width: CGFloat = 380                    // CAPTURE_WIDTH
         let x = workArea.minX + ((workArea.width - width) / 2).rounded()
-        let y = workArea.minY + 28 - height   // CAPTURE_BOTTOM_MARGIN：底边锚定 workArea 底 −28（AppKit 底向坐标，等价 Electron 的 y+workHeight−h−28）
+        let y = workArea.minY + 110           // CAPTURE_BOTTOM_MARGIN=110：AppKit frame.origin 即底边，底边锚定 workArea 底 +110（等价 Electron 的 y = workArea.y + workHeight − h − 110）
         return NSRect(x: x, y: y, width: width, height: height)
     }
 
@@ -243,7 +244,7 @@ func runPanelTest() {
     capture.show()
     pumpFrames(5)
     let initial = capture.testFrame
-    let initialBottom = initial.origin.y + initial.height
+    let initialBottom = initial.origin.y   // AppKit：frame.origin 即窗口底边（左下角）
     print("[paneltest] 初始 frame=\(initial) desired=\(capture.testDesiredSize) 底边锚位=\(initialBottom)")
 
     var drift = 0.0        // 底边相对初始锚位的累计漂移
@@ -259,7 +260,7 @@ func runPanelTest() {
     func observe(_ phase: String, _ step: Int, enforceCap: Bool = false) {
         observedSteps += 1
         let frame = capture.testFrame
-        let bottom = frame.origin.y + frame.height
+        let bottom = frame.origin.y   // 真底边（旧 harness 此处误用 origin.y+height＝顶边）
         let d = bottom - initialBottom
         if abs(d) > abs(drift) { worstStep = "\(phase)#\(step)" }
         drift = d
@@ -323,7 +324,7 @@ func runPanelTest() {
         pumpVolume(i)
         pumpFrames()
         let after = capture.testFrame
-        print("[paneltest] nudge#\(i) 扰动后 height=\(nudged.height) 底边=\(nudged.origin.y + nudged.height) → 同步后 底边=\(String(format: "%.3f", after.origin.y + after.height)) 漂移=\(String(format: "%.3f", after.origin.y + after.height - initialBottom))")
+        print("[paneltest] nudge#\(i) 扰动后 height=\(nudged.height) 底边=\(String(format: "%.3f", nudged.origin.y)) → 同步后 底边=\(String(format: "%.3f", after.origin.y)) 漂移=\(String(format: "%.3f", after.origin.y - initialBottom))")
         observe("nudge", i)
     }
 

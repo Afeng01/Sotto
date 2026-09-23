@@ -37,30 +37,6 @@ final class CapturePanel {
     /// syncHeight 据此绝对计算 origin.y，不再增量推算
     private var bottomAnchorY: CGFloat = 0
 
-    // MARK: - 诊断日志（临时审计用，零依赖，可整体删除）：追加写 ~/.sotto/panel-debug.log
-    private static let debugLogURL: URL = {
-        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".sotto", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("panel-debug.log")
-    }()
-    private static let debugLogHandle: FileHandle? = {
-        if !FileManager.default.fileExists(atPath: debugLogURL.path) {
-            FileManager.default.createFile(atPath: debugLogURL.path, contents: nil)
-        }
-        return try? FileHandle(forWritingTo: debugLogURL)
-    }()
-    private static let debugTimeFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss.SSS"
-        return formatter
-    }()
-
-    /// 审计日志：每次调用追加一行（时间戳 + 内容）。只增不改产品逻辑，排查完可整体删除。
-    private static func debugLog(_ line: String) {
-        guard let handle = debugLogHandle else { return }
-        handle.write(Data("[\(debugTimeFormatter.string(from: Date()))] \(line)\n".utf8))
-    }
-
     init() {
         // 转写变化时同步窗口高度（对齐 resizeCaptureWindow：内容高度驱动，底部对齐不变）
         viewModel.$text
@@ -120,14 +96,6 @@ final class CapturePanel {
             // AppKit 层硬约束：任何路径的窗口高度都不允许越过 153pt（4 行总预算）
             panel.contentMinSize = NSSize(width: Self.width, height: Self.minHeight)
             panel.contentMaxSize = NSSize(width: Self.width, height: Self.maxHeight)
-            // 诊断日志：任何来源（含外部机制/AppKit 校正）的窗口尺寸变化都记入审计日志
-            NotificationCenter.default.addObserver(forName: NSWindow.didResizeNotification, object: panel, queue: .main) { note in
-                MainActor.assumeIsolated {
-                    if let win = note.object as? NSWindow {
-                        CapturePanel.debugLog("didResize frame=\(win.frame)")
-                    }
-                }
-            }
             self.panel = panel
         }
 
@@ -145,7 +113,7 @@ final class CapturePanel {
         panel?.orderOut(nil)
     }
 
-    private func syncHeight(reason: String = "viewModel.$text") {
+    private func syncHeight() {
         guard let panel, panel.isVisible else { return }
         let workHeight = panel.screen?.visibleFrame.height
         let size = desiredSize(workHeight: workHeight)
@@ -155,12 +123,11 @@ final class CapturePanel {
         var frame = panel.frame
         if let screen = panel.screen {
             frame.origin.x = round(screen.visibleFrame.midX - size.width / 2)
-            frame.origin.y = round(screen.visibleFrame.minY + Self.bottomMargin) - size.height
+            frame.origin.y = round(screen.visibleFrame.minY + Self.bottomMargin) // AppKit origin 即左下角：直接锚底边，向上生长
         } else {
-            frame.origin.y = bottomAnchorY - size.height
+            frame.origin.y = bottomAnchorY // bottomAnchorY 亦为底边语义
         }
         frame.size = size
-        Self.debugLog("syncHeight 触发=\(reason) 分支=\(panel.screen != nil ? "screen" : "bottomAnchorY") 旧frame=\(panel.frame) 新frame=\(frame) desired=\(size) visibleFrame=\(panel.screen.map { NSStringFromRect($0.visibleFrame) } ?? "nil") bottomAnchorY=\(bottomAnchorY) 有变更=\(panel.frame != frame)")
         guard panel.frame != frame else { return }
         panel.setFrame(frame, display: true)
     }
@@ -175,7 +142,6 @@ final class CapturePanel {
         let x = round(visibleFrame.midX - size.width / 2)
         let y = round(visibleFrame.minY + Self.bottomMargin)
         bottomAnchorY = y
-        Self.debugLog("position 触发=show 屏=\(screen.localizedName) mouse=\(mouseLocation) visibleFrame=\(visibleFrame) 新frame=\(NSRect(origin: NSPoint(x: x, y: y), size: size)) bottomAnchorY=\(y)")
         panel.setFrame(NSRect(origin: NSPoint(x: x, y: y), size: size), display: true)
     }
 
