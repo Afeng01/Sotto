@@ -11,7 +11,7 @@ import Combine
 final class CapturePanel {
     private static let width: CGFloat = 380                 // CAPTURE_WIDTH（voice-capture-window.ts）
     private static let minHeight: CGFloat = 110             // CAPTURE_MIN_HEIGHT
-    private static let bottomMargin: CGFloat = 28           // CAPTURE_BOTTOM_MARGIN
+    private static let bottomMargin: CGFloat = 110          // 底边距：鹿鸣拍板「往上提一个浮窗的高度」（原 Electron 值 28）
 
     // MARK: 1:1 对齐 use-voice-window-layout.ts 的窗口高度公式（Electron 0.1.2）
     private static let windowBuffer: CGFloat = 6            // WINDOW_HEIGHT_BUFFER
