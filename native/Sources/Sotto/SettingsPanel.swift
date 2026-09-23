@@ -444,13 +444,14 @@ private struct FieldRow<Control: View>: View {
     }
 }
 
-/// 竖排输入项：提示在上，输入框在下（对齐 Electron 的 label+Hint 块）
+/// 竖排输入项：提示在上，输入框在下（对齐 Electron 的 label+Hint 块；
+/// Electron Hint 是 mb-1.5=6，鹿鸣反馈标签与控件贴太近，这里放宽到 8）
 private struct StackedField: View {
     let hint: String
     @ViewBuilder let field: () -> AnyView
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Text(hint).font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
             field()
         }
@@ -762,7 +763,8 @@ struct SettingsView: View {
 
             SectionCard(title: "豆包流式语音输入") {
                 AnyView(
-                    VStack(spacing: 14) {
+                    // Electron 语音输入 Section 子项 space-y-4 = 16px（原 14 过密）
+                    VStack(spacing: 16) {
                         FieldRow(label: "启用语音输入", hint: "启用后才能通过快捷键唤起听写浮窗，再按一次停止并输出。") {
                             SottoToggle(checked: $model.enabled).onChange(of: model.enabled) { _ in model.persistVoice() }
                         }
@@ -834,7 +836,9 @@ struct SettingsView: View {
                             )
                         }
 
+                        // Electron 测试行 pt-1：在 space-y-4 基础上再多 4px = 20
                         testRow
+                            .padding(.top, 4)
                     }
                 )
             }
@@ -842,15 +846,19 @@ struct SettingsView: View {
     }
 
     private var legacyCredentials: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // 对齐 Electron 旧版凭证盒：外框 p-3(12) 不变，标题 mb-2(8)，
+        // 两个凭证项之间 space-y-4(16)（原统一 12 过密）
+        VStack(alignment: .leading, spacing: 8) {
             Text("旧版控制台凭证").font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
-            StackedField(hint: "豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。") {
-                AnyView(SottoTextField(text: $model.appId, placeholder: "请输入 APP ID")
-                    .onChange(of: model.appId) { _ in model.scheduleVoiceSave() })
-            }
-            StackedField(hint: "豆包 Access Token — 对应 X-Api-Access-Key。") {
-                AnyView(SottoTextField(text: $model.accessToken, placeholder: "请输入 Access Token", secure: true)
-                    .onChange(of: model.accessToken) { _ in model.scheduleVoiceSave() })
+            VStack(alignment: .leading, spacing: 16) {
+                StackedField(hint: "豆包 APP ID — 对应 X-Api-App-Key，请填写旧版火山引擎控制台中的 APP ID。") {
+                    AnyView(SottoTextField(text: $model.appId, placeholder: "请输入 APP ID")
+                        .onChange(of: model.appId) { _ in model.scheduleVoiceSave() })
+                }
+                StackedField(hint: "豆包 Access Token — 对应 X-Api-Access-Key。") {
+                    AnyView(SottoTextField(text: $model.accessToken, placeholder: "请输入 Access Token", secure: true)
+                        .onChange(of: model.accessToken) { _ in model.scheduleVoiceSave() })
+                }
             }
         }
         .padding(12)
@@ -893,7 +901,9 @@ struct SettingsView: View {
 
     // 鹿鸣反馈：配置指南常驻太占版面，默认只留标题行，点击整行展开/收起
     private var guideCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        // 对齐 Electron 引导卡：px-4 py-3.5(16/14)、标题 mb-1.5(6)、末段 mt-1.5(6)；
+        // 序号列表项 space-y-0.5(2) 不变。鹿鸣反馈内边距偏小（原 12/10）
+        VStack(alignment: .leading, spacing: 6) {
             Button {
                 withAnimation(.easeInOut(duration: 0.15)) { guideExpanded.toggle() }
             } label: {
@@ -932,8 +942,8 @@ struct SettingsView: View {
                 .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16) // Electron px-4
+        .padding(.vertical, 14) // Electron py-3.5
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.sottoPrimary.opacity(0.05)))
         .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.sottoPrimary.opacity(0.15), lineWidth: 1))
@@ -942,7 +952,8 @@ struct SettingsView: View {
     // MARK: 听写历史页
 
     private var historyPage: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        // 对齐 Electron 历史页头部 mb-4 = 16px（原 14）
+        VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Text("最近 100 条成功输出的听写记录，仅保存在本机。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
@@ -1145,7 +1156,8 @@ struct SettingsView: View {
     private var permissionsPage: some View {
         SectionCard(title: "系统权限") {
             AnyView(
-                VStack(spacing: 12) {
+                // Electron 权限 Section 子项 space-y-4 = 16px（原 12）
+                VStack(spacing: 16) {
                     permissionRow(
                         icon: model.micPermission == .authorized ? "mic" : (model.micPermission == .denied ? "mic.slash" : "mic"),
                         iconColor: model.micPermission == .authorized ? .green : (model.micPermission == .denied ? Color.sottoDestructive : Color.sottoMutedText),
