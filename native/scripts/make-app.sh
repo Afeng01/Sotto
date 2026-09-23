@@ -48,5 +48,8 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --deep -s - "$APP" 2>/dev/null
+# 稳定签名身份「Sotto Dev」：TCC 权限（麦克风/辅助功能）绑定代码签名，
+# 固定证书让重编译后权限不再重置；无证书环境回退 ad-hoc
+IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null | grep -m1 'Sotto Dev' | sed -E 's/^[[:space:]]*[0-9]+[)] ([A-F0-9]+) .*/\1/')
+codesign --force --deep -s "${IDENTITY:--}" "$APP" 2>/dev/null || codesign --force --deep -s - "$APP" 2>/dev/null
 echo "打包完成: $PWD/$APP"
