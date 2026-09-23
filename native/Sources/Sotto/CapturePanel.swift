@@ -66,7 +66,17 @@ final class CapturePanel {
             panel.hidesOnDeactivate = false
             panel.worksWhenModal = true
             let hosting = NSHostingView(rootView: TranscriptPopoverView(viewModel: viewModel))
+            // 根因修复（高度失控）：NSHostingView 默认 sizingOptions =
+            // [.minSize, .intrinsicContentSize, .maxSize]，会把 SwiftUI 内容尺寸转成窗口
+            // 约束。说话久了转写超过 4 行时，ScrollView 内容高度变化（macOS 15 上经
+            // NSScrollView 约束传递）与 syncHeight 的 setFrame 赛跑，AppKit 为满足约束
+            // 把窗口从顶边向下撑大，底边坠过 Dock。置空后窗口尺寸唯一归 syncHeight/
+            // position 驱动：底边固定、向上生长、187pt 封顶。
+            hosting.sizingOptions = []
             panel.contentView = hosting
+            // AppKit 层硬约束：任何路径的窗口高度都不允许越过 187pt 预算
+            panel.contentMinSize = NSSize(width: Self.width, height: Self.minHeight)
+            panel.contentMaxSize = NSSize(width: Self.width, height: Self.maxHeight)
             self.panel = panel
         }
 

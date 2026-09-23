@@ -760,7 +760,8 @@ struct SettingsView: View {
     private var voicePage: some View {
         // 鹿鸣反馈：原来单一大 Section 堆了 9 个条目，按职责拆三组：开关 / 豆包凭证（凭证方式、
         // Key、Resource ID、测试连接聚成一组）/ 识别行为（连接模式、语言、热词）；
-        // 组间沿用通用页同款细分隔线；配置指南是纯文档，从页首挪到页尾弱化。
+        // 组间沿用通用页同款细分隔线。配置指南鹿鸣指定移进「豆包凭证」组内、凭证方式
+        // 行下方：用户不知道凭证怎么获取时，一眼就能看到；识别行为组、页尾不再有指南。
         VStack(alignment: .leading, spacing: 24) {
             SectionCard(title: "豆包流式语音输入") {
                 AnyView(
@@ -785,6 +786,9 @@ struct SettingsView: View {
                             )
                             .onChange(of: model.credentialMode) { _ in model.persistVoice() }
                         }
+
+                        // 鹿鸣指定：配置指南放在凭证方式行正下方——不知道凭证怎么获取时一眼可见
+                        guideCard
 
                         if model.credentialMode == "legacy" {
                             legacyCredentials
@@ -862,9 +866,6 @@ struct SettingsView: View {
                     }
                 )
             }
-
-            // 配置指南是纯文档性质，从页首挪到页尾：常规调配置先看到设置项，需要引导再展开
-            guideCard
         }
     }
 
@@ -963,7 +964,7 @@ struct SettingsView: View {
                 }
                 Text("2. 左侧菜单点「API Key」，创建并复制一个 API Key。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
-                Text("3. 在上方「豆包凭证」里选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。")
+                Text("3. 在上方「凭证方式」选「新版控制台」，在下方粘贴 API Key；Resource ID 保持默认即可。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 Text("4. 点「测试连接」，显示成功就绪。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
@@ -1116,14 +1117,15 @@ struct SettingsView: View {
     }
 
     private var hotkeyField: some View {
-        // 对齐 Electron 通用页（SettingsApp.tsx）快捷键区块：
-        // 左侧标签 text-sm(14) + 提示 text-xs，右侧录制按钮 min-w-180 justify-between；
-        // 预设胶囊距录制行 mt-2(8)，横向 gap-1.5(6)
+        // 通用页快捷键区块（对齐 Electron HotkeyRecorder 交互：点击当前快捷键胶囊进入录制态）：
+        // 左侧标签 text-sm(14) + 提示 text-xs；右侧录制胶囊 min-w-180，既是当前快捷键展示也是录制入口；
+        // 符号系统全局统一 macOS 惯例 ⌃ ⌥ ⇧ ⌘（预设与展示同一套 hotkeySymbol 映射）；
+        // 预设胶囊统一 8px 间距、固定行高；「禁用」不是组合键——去边框灰色文字放末尾做视觉区分
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .center, spacing: 16) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("全局快捷键").font(.system(size: 14))
-                    Text(model.recordingHotkey ? "按下想要的组合键，Esc 取消" : "点击右侧开始录制，按下想要的组合键即可。")
+                    Text(model.recordingHotkey ? "按下想要的组合键，Esc 取消" : "点击快捷键框重新录制，或从下方预设直接选择。")
                         .font(.system(size: 12))
                         .lineSpacing(2)
                         .foregroundColor(Color.sottoMutedText)
@@ -1139,7 +1141,7 @@ struct SettingsView: View {
                         model.startHotkeyRecording()
                     }
                 }) {
-                    Text(model.recordingHotkey ? "正在录制…按 Esc 取消" : hotkeyDisplay)
+                    Text(model.recordingHotkey ? "按下新组合键…" : hotkeyDisplay)
                         .font(.system(size: 13, design: .monospaced))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
@@ -1152,33 +1154,51 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .frame(minWidth: 180)
+                .help("点击进入录制态，按下想要的组合键，Esc 取消")
             }
-            HStack(spacing: 6) {
-                ForEach([("Alt+`", "Alt + `"), ("Control+`", "Ctrl + `"), ("Alt+V", "Alt + V"), ("F5", "F5"), ("", "禁用")], id: \.0) { value, label in
+            // 预设行：间距统一 8、行高固定；「禁用」与组合键之间用细分隔线隔开
+            HStack(spacing: 8) {
+                ForEach(["Alt+`", "Control+`", "Alt+V", "F5"], id: \.self) { value in
                     Button(action: { model.setHotkey(value) }) {
-                        Text(label)
-                            .font(.system(size: 11))
+                        Text(hotkeySymbol(value))
+                            .font(.system(size: 11, design: .monospaced))
                             .padding(.horizontal, 10)
-                            .padding(.vertical, 2)
+                            .padding(.vertical, 4)
                             .background(Capsule().fill(model.hotkey == value ? Color.sottoPrimary.opacity(0.1) : Color.clear))
                             .overlay(Capsule().strokeBorder(model.hotkey == value ? Color.sottoPrimary.opacity(0.4) : Color.sottoBorder, lineWidth: 1))
                             .foregroundColor(model.hotkey == value ? Color.sottoPrimary : Color.sottoMutedText)
                     }
                     .buttonStyle(.plain)
                 }
+                Rectangle()
+                    .fill(Color.sottoBorder.opacity(0.6))
+                    .frame(width: 1, height: 14)
+                Button(action: { model.setHotkey("") }) {
+                    Text("禁用")
+                        .font(.system(size: 11))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(model.hotkey.isEmpty ? Color.sottoPrimary.opacity(0.1) : Color.clear))
+                        .foregroundColor(model.hotkey.isEmpty ? Color.sottoPrimary : Color.sottoMutedText)
+                }
+                .buttonStyle(.plain)
+                .help("禁用全局快捷键")
             }
-            .padding(.top, 2) // Electron mt-2 相对录制行 8px，扣掉容器 spacing 8 中的余量
         }
     }
 
+    /// 快捷键符号统一：存储用 Electron accelerator 名（Cmd/Control/Alt/Shift），
+    /// 展示统一转 macOS 惯例 ⌘ ⌃ ⌥ ⇧，预设胶囊与当前快捷键共用同一映射
+    private func hotkeySymbol(_ accelerator: String) -> String {
+        accelerator
+            .replacingOccurrences(of: "Cmd", with: "⌘")
+            .replacingOccurrences(of: "Control", with: "⌃")
+            .replacingOccurrences(of: "Alt", with: "⌥")
+            .replacingOccurrences(of: "Shift", with: "⇧")
+    }
+
     private var hotkeyDisplay: String {
-        model.hotkey.isEmpty
-            ? "点击录制"
-            : model.hotkey
-                .replacingOccurrences(of: "Cmd", with: "⌘")
-                .replacingOccurrences(of: "Control", with: "⌃")
-                .replacingOccurrences(of: "Alt", with: "⌥")
-                .replacingOccurrences(of: "Shift", with: "⇧")
+        model.hotkey.isEmpty ? "点击录制" : hotkeySymbol(model.hotkey)
     }
 
     // MARK: 系统权限页
