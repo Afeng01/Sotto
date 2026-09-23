@@ -9,14 +9,33 @@ import Combine
 /// 圆角 16 卡片、popover 米白底、头部 呦呦+状态行、1px 分隔线、15px/28 行高转写区）。
 @MainActor
 final class CapturePanel {
-    private static let width: CGFloat = 380                 // CAPTURE_WIDTH
+    private static let width: CGFloat = 380                 // CAPTURE_WIDTH（voice-capture-window.ts）
     private static let minHeight: CGFloat = 110             // CAPTURE_MIN_HEIGHT
-    private static let maxHeight: CGFloat = 187             // 固定高度 55 + 转写区 4 行（use-voice-window-layout.ts POPOVER_MAX_TOTAL_LINES）
     private static let bottomMargin: CGFloat = 28           // CAPTURE_BOTTOM_MARGIN
+
+    // MARK: 1:1 对齐 use-voice-window-layout.ts 的窗口高度公式（Electron 0.1.2）
+    private static let windowBuffer: CGFloat = 6            // WINDOW_HEIGHT_BUFFER
+    private static let lineHeight: CGFloat = 28             // LINE_HEIGHT（leading-7）
+    private static let minTranscriptHeight: CGFloat = 34    // MIN_TRANSCRIPT_HEIGHT（min-h-[34px]）
+    /// POPOVER_MAX_TOTAL_LINES = 4：总行数预算含头部 1 行 → 转写区实际最多 3 行，
+    /// 超出后转写区固定 106pt、内容整体上滚（scrollTo bottom）
+    private static let maxTotalLines: CGFloat = 4
+    /// extraBuffer：未触顶时的额外余量（触顶后归零，这是 153 ≠ 55+106 的原因）
+    private static let uncappedExtraBuffer: CGFloat = 8
+    /// fixedHeight = 根容器垂直 padding（pb-3 = 12）+ 头部 28 + hintBar（无）+ 1（分隔线）
+    private static let fixedHeight: CGFloat = 12 + 28 + 1
+    /// 渲染层窗口高度上限 = min(max(220, availHeight/3), fixed + 4×28)；
+    /// max(220,…) 恒大于 153，故上限恒为 153
+    private static let maxHeight: CGFloat = fixedHeight + maxTotalLines * lineHeight
+    /// 主进程 resizeCaptureWindow 的 560 上限（实际从不 binding，保留公式完整性）
+    private static let mainProcessHeightCap: CGFloat = 560
 
     private var panel: NSPanel?
     private let viewModel = TranscriptViewModel()
     private var cancellables = Set<AnyCancellable>()
+    /// 底边锚位（0.2.2 加固）：show/position 时锁定的目标底边 y，
+    /// syncHeight 据此绝对计算 origin.y，不再增量推算
+    private var bottomAnchorY: CGFloat = 0
 
     init() {
         // 转写变化时同步窗口高度（对齐 resizeCaptureWindow：内容高度驱动，底部对齐不变）
@@ -68,13 +87,13 @@ final class CapturePanel {
             let hosting = NSHostingView(rootView: TranscriptPopoverView(viewModel: viewModel))
             // 根因修复（高度失控）：NSHostingView 默认 sizingOptions =
             // [.minSize, .intrinsicContentSize, .maxSize]，会把 SwiftUI 内容尺寸转成窗口
-            // 约束。说话久了转写超过 4 行时，ScrollView 内容高度变化（macOS 15 上经
+            // 约束。转写超过 3 行时，ScrollView 内容高度变化（macOS 15 上经
             // NSScrollView 约束传递）与 syncHeight 的 setFrame 赛跑，AppKit 为满足约束
             // 把窗口从顶边向下撑大，底边坠过 Dock。置空后窗口尺寸唯一归 syncHeight/
-            // position 驱动：底边固定、向上生长、187pt 封顶。
+            // position 驱动：底边固定、向上生长、153pt（4 行总预算）封顶。
             hosting.sizingOptions = []
             panel.contentView = hosting
-            // AppKit 层硬约束：任何路径的窗口高度都不允许越过 187pt 预算
+            // AppKit 层硬约束：任何路径的窗口高度都不允许越过 153pt（4 行总预算）
             panel.contentMinSize = NSSize(width: Self.width, height: Self.minHeight)
             panel.contentMaxSize = NSSize(width: Self.width, height: Self.maxHeight)
             self.panel = panel
@@ -96,11 +115,20 @@ final class CapturePanel {
 
     private func syncHeight() {
         guard let panel, panel.isVisible else { return }
-        let size = desiredSize()
-        guard panel.frame.size != size else { return }
+        let workHeight = panel.screen?.visibleFrame.height
+        let size = desiredSize(workHeight: workHeight)
+        // 1:1 对齐 resizeCaptureWindow：每次调整都重新读取 workArea，绝对计算底边与
+        // 水平居中，不从当前 frame 增量推算（增量式写法会把外部机制对 frame 的改动
+        // 固化成漂移；绝对计算则每次自愈）。
         var frame = panel.frame
-        frame.origin.y -= (size.height - frame.height) // 底边保持不动
+        if let screen = panel.screen {
+            frame.origin.x = round(screen.visibleFrame.midX - size.width / 2)
+            frame.origin.y = round(screen.visibleFrame.minY + Self.bottomMargin) - size.height
+        } else {
+            frame.origin.y = bottomAnchorY - size.height
+        }
         frame.size = size
+        guard panel.frame != frame else { return }
         panel.setFrame(frame, display: true)
     }
 
@@ -108,17 +136,32 @@ final class CapturePanel {
         let mouseLocation = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) ?? NSScreen.main else { return }
         let visibleFrame = screen.visibleFrame
-        let size = desiredSize()
-        let x = visibleFrame.midX - size.width / 2
-        let y = visibleFrame.minY + Self.bottomMargin
+        let size = desiredSize(workHeight: visibleFrame.height)
+        // integral 化：origin/size 全取整，防分数字号（奇数屏宽中点、非整 Dock 高）
+        // 与 backing scale 舍入漂移
+        let x = round(visibleFrame.midX - size.width / 2)
+        let y = round(visibleFrame.minY + Self.bottomMargin)
+        bottomAnchorY = y
         panel.setFrame(NSRect(origin: NSPoint(x: x, y: y), size: size), display: true)
     }
 
-    /// 窗口总高：根容器底边距 12 + 头部 28 + 分隔线 1 + 转写区 + 缓冲 14（对齐 use-voice-window-layout.ts）
-    private func desiredSize() -> NSSize {
-        let lines = min(4, Self.transcriptLineCount(of: viewModel.text))
-        let transcriptBox = max(34, 8 + CGFloat(lines) * 28 + 12) // pt-2 + 行高 28 + pb-3
-        let height = min(Self.maxHeight, max(Self.minHeight, 55 + transcriptBox))
+    /// 窗口总高：1:1 复刻 use-voice-window-layout.ts resizeVoiceWindow +
+    /// voice-capture-window.ts resizeCaptureWindow 的两级公式：
+    /// 渲染层 nextHeight = fixedHeight + min(natural, 106) + 6 + (未触顶 ? 8 : 0)，
+    /// 主进程再钳制 max(110, min(560, floor((workHeight-28)/3), height))。
+    private func desiredSize(workHeight: CGFloat? = nil) -> NSSize {
+        let lines = Self.transcriptLineCount(of: viewModel.text)
+        // transcriptBox.scrollHeight = pt-2(8) + 行数×28 + pb-3(12)，与 34 取大
+        let natural = max(Self.minTranscriptHeight, 8 + CGFloat(lines) * Self.lineHeight + 12)
+        // screenMaxWindowHeight() = max(220, availHeight/3) 恒 > 153，渲染层上限恒为 fixed + 4×28
+        let maxWindowHeight = max(Self.minTranscriptHeight + Self.fixedHeight, Self.maxHeight)
+        let viewportMax = max(Self.minTranscriptHeight, maxWindowHeight - Self.fixedHeight - Self.windowBuffer)
+        let transcriptHeight = min(natural, viewportMax)
+        let extraBuffer: CGFloat = transcriptHeight < natural ? 0 : Self.uncappedExtraBuffer
+        var height = Self.fixedHeight + transcriptHeight + Self.windowBuffer + extraBuffer
+        // 主进程 resizeCaptureWindow 二次钳制（workHeight 未知时只套 110/560）
+        let screenCap: CGFloat = workHeight.map { max(Self.minHeight, floor(($0 - Self.bottomMargin) / 3)) } ?? Self.mainProcessHeightCap
+        height = max(Self.minHeight, min(Self.mainProcessHeightCap, screenCap, height.rounded()))
         return NSSize(width: Self.width, height: height)
     }
 
@@ -155,7 +198,8 @@ final class TranscriptViewModel: ObservableObject {
 /// 浮窗视觉：结构复刻 Electron 版 VoiceCaptureApp.tsx 的 return JSX（L355-411）。
 /// 透明根容器（px-3 pb-3）→ 圆角 16 卡片（bg-popover + border/70 + shadow-lg）
 /// → 头部行（图标/波形 + 呦呦 + 状态文案 + 错误时“打开设置”）
-/// → 1px 分隔线（mx-3.5 border/60）→ 转写区（15px、28 行高、左对齐、最多 4 行滚动）。
+/// → 1px 分隔线（mx-3.5 border/60）→ 转写区（15px、28 行高、左对齐、最多 3 行（总预算
+/// 4 行含头部），超出后整体上滚、最新一行始终可见）。
 struct TranscriptPopoverView: View {
     @ObservedObject var viewModel: TranscriptViewModel
 
@@ -297,7 +341,7 @@ struct TranscriptPopoverView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 12)
             }
-            .frame(minHeight: 34, maxHeight: max(34, 8 + 4 * 28 + 12))
+            .frame(minHeight: 34, maxHeight: 106) // Electron viewportMaxTranscriptHeight = 153 − 41 − 6
             .scrollIndicators(.hidden) // [scrollbar-width:none]
             .onChange(of: viewModel.text) { _ in
                 withAnimation(nil) { proxy.scrollTo("transcript", anchor: .bottom) }
@@ -342,4 +386,21 @@ private struct Spinner: View {
 
 extension Notification.Name {
     static let sottoOpenSettings = Notification.Name("sotto.openSettings")
+}
+
+// MARK: - paneltest 复现 harness 专用只读接口（不参与正常路径）
+extension CapturePanel {
+    var testFrame: NSRect { panel?.frame ?? .zero }
+    var testDesiredSize: NSSize { desiredSize() }
+    var testMaxHeight: CGFloat { Self.maxHeight }
+
+    /// 仅 paneltest 使用：模拟外部机制对窗口的微调（内容约束/像素对齐类：
+    /// 顶边固定、高度增加 delta、底边下坠），用于验证 syncHeight 对外部校正的处理
+    func testNudgeHeight(_ delta: CGFloat) {
+        guard let panel else { return }
+        var frame = panel.frame
+        frame.origin.y -= delta
+        frame.size.height += delta
+        panel.setFrame(frame, display: true)
+    }
 }

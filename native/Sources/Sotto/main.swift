@@ -8,6 +8,7 @@ import ApplicationServices
 //   swift run Sotto          # 启动常驻应用（菜单栏 + Dock + Ctrl+` 听写）
 //   swift run Sotto check    # 只验证豆包 ASR 握手与鉴权，成功后退出
 //   swift run Sotto status   # 打印读取到的设置摘要（不连接）
+//   swift run Sotto paneltest # 浮窗高度同步复现 harness（不注册热键、不申请权限）
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
@@ -158,6 +159,193 @@ func runCheck() async -> Int32 {
     }
 }
 
+/// `swift run Sotto paneltest`：浮窗高度同步复现 harness（不注册热键、不申请权限）。
+///
+/// 模拟真实听写时序：partial result 反复替换/增长（1→3 行跨越多次）→ 灌入 30+ 行
+/// 长文验证封顶后窗口高度恒定、底边不动、内容持续滚动 → 外部高度扰动（模拟
+/// 约束/像素对齐类校正）→ 最终结果替换导致行数回落。每次变更后跑几帧 RunLoop，
+/// 记录 panel.frame.origin.y / size，并与下方独立实现的 Electron 期望公式逐步对比。
+/// 判定标准：封顶后高度恒定；底边 origin.y + height 漂移 ≤0.5pt；
+/// 每步 (x,y,w,h) 与独立期望公式一致（不一致计违规并打印）。
+@MainActor
+func runPanelTest() {
+
+    // MARK: 期望公式（独立实现）：逐条转录自 Electron TS 源码，不引用 CapturePanel 的
+    // desiredSize/常量，避免自证。
+    //   行数/换行估算：src/renderer VoiceCaptureApp.tsx 转写区 15px、leading-7（28）、
+    //   byCharWrapping，可用宽 = 380 − 根边距 12×2 − 描边 1×2 − px-3.5 14×2 = 326
+    //   高度：src/voice-dictation/renderer/use-voice-window-layout.ts resizeVoiceWindow
+    //        + src/main/voice-capture-window.ts resizeCaptureWindow
+
+    func harnessLineCount(of raw: String) -> Int {
+        guard !raw.isEmpty else { return 1 }
+        let font = NSFont.systemFont(ofSize: 15)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.lineBreakMode = .byCharWrapping
+        let attr = NSAttributedString(string: raw, attributes: [.font: font, .paragraphStyle: paragraph])
+        let single = attr.boundingRect(
+            with: NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading]
+        ).height
+        guard single > 0 else { return 1 }
+        let wrapped = attr.boundingRect(
+            with: NSSize(width: 326, height: CGFloat.greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading]
+        )
+        return max(1, Int(ceil(wrapped.height / single - 0.05)))
+    }
+
+    /// 期望 frame：height = max(110, min(560, floor((workHeight−28)/3),
+    /// ceil(41 + min(natural, viewportMax) + 6 + extraBuffer)))，其中
+    /// natural = max(34, 8 + 转写行数×28 + 12)（转写区 scrollHeight = pt-2 8 + 行 + pb-3 12），
+    /// viewportMax = max(34, maxWindowHeight − 41 − 6)，
+    /// maxWindowHeight = max(75, min(max(220, floor(workHeight/3)), 41 + 4×28)) = 153，
+    /// extraBuffer：natural > viewportMax（即转写 ≥4 行触顶）时 0，否则 8。
+    /// x = workArea.x + round((workArea.width−380)/2)，y 底边锚定 workArea 底 −28。
+    func expectedFrame(transcript: String, workArea: NSRect) -> NSRect {
+        let fixedHeight: CGFloat = 12 + 28 + 1      // 根容器垂直 padding + 头部 28 + 分隔线 1
+        let windowBuffer: CGFloat = 6               // WINDOW_HEIGHT_BUFFER
+        let lineHeight: CGFloat = 28                // LINE_HEIGHT
+        let minTranscript: CGFloat = 34             // MIN_TRANSCRIPT_HEIGHT
+        let maxTotalLines: CGFloat = 4              // POPOVER_MAX_TOTAL_LINES（含头部总预算）
+        let lines = CGFloat(harnessLineCount(of: transcript))
+        let natural = max(minTranscript, 8 + lines * lineHeight + 12)
+        let maxWindowHeight = max(
+            minTranscript + fixedHeight,
+            min(max(220, (workArea.height / 3).rounded(.down)), fixedHeight + maxTotalLines * lineHeight)
+        )
+        let viewportMax = max(minTranscript, maxWindowHeight - fixedHeight - windowBuffer)
+        let transcriptHeight = min(natural, viewportMax)
+        let extraBuffer: CGFloat = natural > viewportMax ? 0 : 8
+        var height = (fixedHeight + transcriptHeight + windowBuffer + extraBuffer).rounded(.up)
+        let screenCap = max(110, ((workArea.height - 28) / 3).rounded(.down))
+        height = max(110, min(560, screenCap, height.rounded()))
+        let width: CGFloat = 380                    // CAPTURE_WIDTH
+        let x = workArea.minX + ((workArea.width - width) / 2).rounded()
+        let y = workArea.minY + 28 - height   // CAPTURE_BOTTOM_MARGIN：底边锚定 workArea 底 −28（AppKit 底向坐标，等价 Electron 的 y+workHeight−h−28）
+        return NSRect(x: x, y: y, width: width, height: height)
+    }
+
+    /// 独立定位 panel 所在屏的 workArea（不经过 CapturePanel）
+    func workAreaForFrame(_ frame: NSRect) -> NSRect? {
+        let center = NSPoint(x: frame.midX, y: frame.midY)
+        let screen = NSScreen.screens.first(where: { NSMouseInRect(center, $0.frame, false) }) ?? NSScreen.main
+        return screen?.visibleFrame
+    }
+
+    func pumpFrames(_ n: Int = 3) {
+        for _ in 0..<n {
+            RunLoop.main.run(until: Date().addingTimeInterval(0.02))
+        }
+    }
+
+    let capture = CapturePanel()
+    capture.show()
+    pumpFrames(5)
+    let initial = capture.testFrame
+    let initialBottom = initial.origin.y + initial.height
+    print("[paneltest] 初始 frame=\(initial) desired=\(capture.testDesiredSize) 底边锚位=\(initialBottom)")
+
+    var drift = 0.0        // 底边相对初始锚位的累计漂移
+    var maxAbsDrift = 0.0
+    var worstStep = ""
+    let capHeight = capture.testMaxHeight
+    var capViolations = 0
+    var expectedMismatches = 0   // 与独立期望公式不符的步数
+    var observedSteps = 0
+
+    var lastSize = NSSize(width: -1, height: -1)
+
+    func observe(_ phase: String, _ step: Int, enforceCap: Bool = false) {
+        observedSteps += 1
+        let frame = capture.testFrame
+        let bottom = frame.origin.y + frame.height
+        let d = bottom - initialBottom
+        if abs(d) > abs(drift) { worstStep = "\(phase)#\(step)" }
+        drift = d
+        maxAbsDrift = max(maxAbsDrift, abs(d))
+        let sizeChanged = frame.size != lastSize
+        lastSize = frame.size
+        // 每步 (x,y,w,h) 与独立实现的 Electron 期望公式对比（期望值不经 CapturePanel）
+        if let workArea = workAreaForFrame(frame) {
+            let expected = expectedFrame(transcript: capture.transcript, workArea: workArea)
+            let matches = abs(frame.origin.x - expected.origin.x) < 0.5
+                && abs(frame.origin.y - expected.origin.y) < 0.5
+                && abs(frame.width - expected.width) < 0.5
+                && abs(frame.height - expected.height) < 0.5
+            if !matches {
+                expectedMismatches += 1
+                print("[paneltest] 期望不符 \(phase)#\(step) 实际=\(frame) 期望=\(expected) 行数=\(harnessLineCount(of: capture.transcript))")
+            }
+        }
+        // 封顶阶段窗口高度必须恒定
+        if enforceCap && abs(frame.height - capHeight) > 0.01 {
+            capViolations += 1
+            print("[paneltest] 违规 \(phase)#\(step) 封顶高度应=\(capHeight) 实际=\(frame.height)")
+        }
+        // 打印每次变化：窗口尺寸跃迁、尺寸与 desired 不一致、或底边动了
+        if sizeChanged || frame.size != capture.testDesiredSize || abs(d) > 0.01 {
+            print("[paneltest] \(phase)#\(step) frame=\(frame) desired=\(capture.testDesiredSize) 底边=\(bottom) 漂移=\(String(format: "%.3f", d))")
+        }
+    }
+
+    // 模拟 AudioCapture.onVolume 的主队列高频音量回调（录音期间持续存在）
+    func pumpVolume(_ i: Int) {
+        capture.volume = Double((i % 20) + 1) / 20.0
+    }
+
+    // 阶段一：partial result 反复增长/替换，长度循环跨越 1→3 行边界多次；
+    // 音量回调与文本变更同帧交错（真实录音的输入节奏）
+    for i in 1...200 {
+        capture.transcript = "测试第\(i)句：" + String(repeating: "字", count: i % 62)
+        pumpVolume(i)
+        pumpFrames()
+        observe("grow", i)
+    }
+
+    // 阶段二：灌入 30+ 行长文（326pt 宽 ≈ 21 字/行，640 字 ≈ 30 行），验证 desired
+    // 封顶在 3 行后窗口高度恒定、底边不动、内容靠 ScrollView 持续上滚；
+    // partial 持续替换 + 同一帧内多次文本变更（partial 结果到达快于屏幕刷新）
+    for i in 1...200 {
+        capture.transcript = "长段第\(i)句：" + String(repeating: "词", count: 640 + i % 30)
+        pumpVolume(i)
+        capture.transcript = "长段第\(i)句替换：" + String(repeating: "词", count: 650 + i % 30)
+        pumpFrames()
+        observe("cap", i, enforceCap: true)
+    }
+
+    // 阶段三：外部高度扰动（模拟约束/像素对齐类校正：顶边固定、高度被撑大 0.5pt、
+    // 底边下坠），观察 syncHeight 是否把外部校正转化为永久底边漂移
+    for i in 1...40 {
+        capture.testNudgeHeight(0.5)
+        let nudged = capture.testFrame
+        capture.transcript = "扰动第\(i)句：" + String(repeating: "词", count: 640)
+        pumpVolume(i)
+        pumpFrames()
+        let after = capture.testFrame
+        print("[paneltest] nudge#\(i) 扰动后 height=\(nudged.height) 底边=\(nudged.origin.y + nudged.height) → 同步后 底边=\(String(format: "%.3f", after.origin.y + after.height)) 漂移=\(String(format: "%.3f", after.origin.y + after.height - initialBottom))")
+        observe("nudge", i)
+    }
+
+    // 阶段四：部分结果被最终结果替换，文本缩短、行数回落（对称性）
+    for i in 1...100 {
+        capture.transcript = "最终结果\(i)：" + String(repeating: "字", count: max(0, 60 - i % 62))
+        pumpVolume(i)
+        pumpFrames()
+        observe("shrink", i)
+    }
+
+    print("[paneltest] 漂移最大处：\(worstStep)")
+    print("[paneltest] 期望公式对比：共 \(observedSteps) 步，不符 \(expectedMismatches) 步（期望值由 harness 内独立转录的 Electron TS 公式计算）")
+
+    let final = capture.testFrame
+    print("[paneltest] 结束 frame=\(final) desired=\(capture.testDesiredSize)")
+    print("[paneltest] 封顶高度=\(capHeight)pt 高度违规次数=\(capViolations)")
+    print("[paneltest] 最大底边漂移=\(String(format: "%.3f", maxAbsDrift))pt 最终漂移=\(String(format: "%.3f", drift))pt （判定阈值 ≤0.5pt）")
+    let pass = maxAbsDrift <= 0.5 && capViolations == 0 && expectedMismatches == 0
+    print(pass ? "[paneltest] PASS" : "[paneltest] FAIL")
+}
+
 let args = CommandLine.arguments.dropFirst()
 
 if args.contains("status") {
@@ -178,6 +366,13 @@ MainActor.assumeIsolated {
     let app = NSApplication.shared
     let delegate = AppDelegate()
     app.delegate = delegate
+
+    // paneltest：浮窗高度复现 harness，跑完即退出，不进常驻主循环
+    if args.contains("paneltest") {
+        app.setActivationPolicy(.prohibited)
+        runPanelTest()
+        exit(0)
+    }
 
     if args.contains("check") {
         Task { @MainActor in
