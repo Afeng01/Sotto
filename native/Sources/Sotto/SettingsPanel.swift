@@ -9,7 +9,7 @@ import SwiftUI
 @MainActor
 final class SettingsModel: ObservableObject {
     enum Page: String, CaseIterable, Identifiable {
-        case voice, history, general, permissions, about
+        case voice, history, general, permissions, about, changelog
         var id: String { rawValue }
 
         var label: String {
@@ -19,6 +19,7 @@ final class SettingsModel: ObservableObject {
             case .general: return "通用"
             case .permissions: return "系统权限"
             case .about: return "关于"
+            case .changelog: return "更新日志"
             }
         }
 
@@ -29,6 +30,7 @@ final class SettingsModel: ObservableObject {
             case .general: return "slider.horizontal.3"
             case .permissions: return "checkmark.shield"
             case .about: return "info.circle"
+            case .changelog: return "text.badge.star"
             }
         }
     }
@@ -745,6 +747,7 @@ struct SettingsView: View {
                 case .general: generalPage
                 case .permissions: permissionsPage
                 case .about: aboutPage
+                case .changelog: ChangelogPageView()
                 }
             }
             .padding(.horizontal, 28)

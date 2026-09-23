@@ -9,6 +9,9 @@ APP=build/Sotto.app
 if [ -e "$APP" ]; then trash "$APP"; fi
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/Sotto "$APP/Contents/MacOS/Sotto"
+# 更新日志：拷进 Resources，设置窗「更新日志」页运行时读 Bundle resource
+#（发版只改仓库根部 CHANGELOG.md，不硬编码进 Swift）
+cp ../CHANGELOG.md "$APP/Contents/Resources/CHANGELOG.md"
 
 # 图标：复用 resources/icon.png 生成 icns
 SRC=../resources/icon.png
