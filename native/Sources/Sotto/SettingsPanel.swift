@@ -702,11 +702,9 @@ struct SettingsView: View {
     }
 
     private var sidebar: some View {
-        // 鹿鸣反馈：侧边栏项间距太挤。Electron 版（SettingsApp.tsx nav）单项高 ≈ 32px
-        //（text-[13px] 行高 ~20 + py-1.5 上下各 6），SwiftUI Text 13pt 行高只有 ~16，
-        // 视觉上密一截。这里把单项内容高度撑到 20（minHeight: 20），项间隔从 2 加到 4，
-        // 保持 w-176 / px-10 / 圆角 6 不变。
-        VStack(alignment: .leading, spacing: 4) {
+        // 鹿鸣反馈：侧边栏不用松，回退到上一版排版（项间隔 2、容器 top padding 12、
+        // 去掉 minHeight 20）；右侧内容列的间距调整全部保留。
+        VStack(alignment: .leading, spacing: 2) {
             ForEach(SettingsModel.Page.allCases) { item in
                 Button(action: { model.page = item }) {
                     HStack(spacing: 10) {
@@ -717,7 +715,6 @@ struct SettingsView: View {
                             .fontWeight(model.page == item ? .medium : .regular)
                         Spacer()
                     }
-                    .frame(minHeight: 20)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 6)
                     .background(RoundedRectangle(cornerRadius: 6).fill(sidebarBackground(for: item)))
@@ -732,7 +729,7 @@ struct SettingsView: View {
             Spacer()
         }
         .padding(.horizontal, 10)
-        .padding(.top, 14)
+        .padding(.top, 12)
         .padding(.bottom, 12)
         .frame(width: 176, alignment: .top)
     }
@@ -761,16 +758,26 @@ struct SettingsView: View {
     // MARK: 语音输入页
 
     private var voicePage: some View {
+        // 鹿鸣反馈：原来单一大 Section 堆了 9 个条目，按职责拆三组：开关 / 豆包凭证（凭证方式、
+        // Key、Resource ID、测试连接聚成一组）/ 识别行为（连接模式、语言、热词）；
+        // 组间沿用通用页同款细分隔线；配置指南是纯文档，从页首挪到页尾弱化。
         VStack(alignment: .leading, spacing: 24) {
-            guideCard
-
             SectionCard(title: "豆包流式语音输入") {
                 AnyView(
-                    // Electron 语音输入 Section 子项 space-y-4 = 16px（原 14 过密）
                     VStack(spacing: 16) {
                         FieldRow(label: "启用语音输入", hint: "启用后才能通过快捷键唤起听写浮窗，再按一次停止并输出。") {
                             SottoToggle(checked: $model.enabled).onChange(of: model.enabled) { _ in model.persistVoice() }
                         }
+                    }
+                )
+            }
+
+            sectionDivider
+
+            SectionCard(title: "豆包凭证") {
+                AnyView(
+                    // Electron 语音输入 Section 子项 space-y-4 = 16px（原 14 过密）
+                    VStack(spacing: 16) {
                         FieldRow(label: "凭证方式", hint: "新版控制台只需要一个 API Key；旧版需要 APP ID + Access Token。") {
                             SottoSegmented(
                                 options: [("api-key", "新版控制台"), ("legacy", "旧版控制台")],
@@ -807,6 +814,19 @@ struct SettingsView: View {
                                 .onChange(of: model.resourceId) { _ in model.scheduleVoiceSave() })
                         }
 
+                        // 测试连接验证的就是上面这组凭证，紧贴凭证区成组；
+                        // Electron 测试行 pt-1：在 space-y-4 基础上再多 4px = 20
+                        testRow
+                            .padding(.top, 4)
+                    }
+                )
+            }
+
+            sectionDivider
+
+            SectionCard(title: "识别行为") {
+                AnyView(
+                    VStack(spacing: 16) {
                         FieldRow(label: "连接模式", hint: "优化版只在结果变化时返回新包，实时体验更好。") {
                             SottoSelect(
                                 options: [("async", "双向流式优化版"), ("duplex", "双向流式标准版")],
@@ -839,13 +859,20 @@ struct SettingsView: View {
                             )
                         }
 
-                        // Electron 测试行 pt-1：在 space-y-4 基础上再多 4px = 20
-                        testRow
-                            .padding(.top, 4)
                     }
                 )
             }
+
+            // 配置指南是纯文档性质，从页首挪到页尾：常规调配置先看到设置项，需要引导再展开
+            guideCard
         }
+    }
+
+    /// 组间分隔线（对齐通用页的 my-6 h-px bg-border/70）
+    private var sectionDivider: some View {
+        Rectangle()
+            .fill(Color.sottoBorder.opacity(0.7))
+            .frame(height: 1)
     }
 
     private var legacyCredentials: some View {
@@ -936,7 +963,7 @@ struct SettingsView: View {
                 }
                 Text("2. 左侧菜单点「API Key」，创建并复制一个 API Key。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
-                Text("3. 下面「凭证方式」选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。")
+                Text("3. 在上方「豆包凭证」里选「新版控制台」，粘贴 API Key；Resource ID 保持默认即可。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
                 Text("4. 点「测试连接」，显示成功就绪。")
                     .font(.system(size: 12)).foregroundColor(Color.sottoMutedText)
