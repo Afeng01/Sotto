@@ -644,7 +644,7 @@ export function SettingsApp(): React.ReactElement {
                         {hotkeyError && <span className="mt-1 block text-xs text-destructive">{hotkeyError}</span>}
                         {appSettings.hotkey && hotkeyStatus && !hotkeyStatus.registered && (
                           <span className="mt-1 block text-xs text-destructive">
-                            注册失败：可能被其他应用占用（例如 Proma 占用 Ctrl + `），请更换。
+                            注册失败：可能被其他应用占用（例如其他应用占用 Ctrl + `），请更换。
                           </span>
                         )}
                       </div>

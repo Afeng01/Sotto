@@ -108,7 +108,7 @@ async function bootstrap(): Promise<void> {
     void dialog.showMessageBox({
       type: 'warning',
       message: `全局听写快捷键 ${hotkey} 注册失败`,
-      detail: '该快捷键可能被其他应用占用（例如 Proma 占用了 Ctrl + `）。请在呦呦设置的“通用”页更换快捷键。',
+      detail: '该快捷键可能被其他应用占用（例如其他应用占用了 Ctrl + `）。请在呦呦设置的“通用”页更换快捷键。',
       buttons: ['打开设置', '稍后处理'],
       defaultId: 0,
     }).then(({ response }) => {
