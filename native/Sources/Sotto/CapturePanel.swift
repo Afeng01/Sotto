@@ -11,9 +11,13 @@ import Combine
 final class CapturePanel {
     private static let width: CGFloat = 380                 // CAPTURE_WIDTH（voice-capture-window.ts）
     private static let minHeight: CGFloat = 110             // CAPTURE_MIN_HEIGHT
-    private static let bottomMargin: CGFloat = 110          // 底边距：鹿鸣拍板「往上提一个浮窗的高度」（原 Electron 值 28）
+    private static let bottomMargin: CGFloat = 20           // 底边距：鹿鸣拍板「只比 Dock 高一点点」（0.2.5）
 
-    // MARK: 1:1 对齐 use-voice-window-layout.ts 的窗口高度公式（Electron 0.1.2）
+    // MARK: 固定两行窗口（鹿鸣 0.2.5 拍板）：高度恒定不再伸缩，超出两行的内容向上滚出
+    /// 转写区视口 = 两行（2×28），加上下 padding 8+12 正好装满
+    fileprivate static let transcriptViewport: CGFloat = lineHeight * 2 + 20
+    /// 窗口总高 = 头部区 41 + 转写视口 76 + 缓冲 6 = 123，从唤起到结束恒定不变
+    private static let fixedWindowHeight: CGFloat = fixedHeight + lineHeight * 2 + 20 + windowBuffer
     private static let windowBuffer: CGFloat = 6            // WINDOW_HEIGHT_BUFFER
     private static let lineHeight: CGFloat = 28             // LINE_HEIGHT（leading-7）
     private static let minTranscriptHeight: CGFloat = 34    // MIN_TRANSCRIPT_HEIGHT（min-h-[34px]）
@@ -145,24 +149,9 @@ final class CapturePanel {
         panel.setFrame(NSRect(origin: NSPoint(x: x, y: y), size: size), display: true)
     }
 
-    /// 窗口总高：1:1 复刻 use-voice-window-layout.ts resizeVoiceWindow +
-    /// voice-capture-window.ts resizeCaptureWindow 的两级公式：
-    /// 渲染层 nextHeight = fixedHeight + min(natural, 106) + 6 + (未触顶 ? 8 : 0)，
-    /// 主进程再钳制 max(110, min(560, floor((workHeight-28)/3), height))。
+    /// 窗口总高：0.2.5 起固定两行档（123pt），唤起后不再随文字变化；旧动态公式仅留档参考。
     private func desiredSize(workHeight: CGFloat? = nil) -> NSSize {
-        let lines = Self.transcriptLineCount(of: viewModel.text)
-        // transcriptBox.scrollHeight = pt-2(8) + 行数×28 + pb-3(12)，与 34 取大
-        let natural = max(Self.minTranscriptHeight, 8 + CGFloat(lines) * Self.lineHeight + 12)
-        // screenMaxWindowHeight() = max(220, availHeight/3) 恒 > 153，渲染层上限恒为 fixed + 4×28
-        let maxWindowHeight = max(Self.minTranscriptHeight + Self.fixedHeight, Self.maxHeight)
-        let viewportMax = max(Self.minTranscriptHeight, maxWindowHeight - Self.fixedHeight - Self.windowBuffer)
-        let transcriptHeight = min(natural, viewportMax)
-        let extraBuffer: CGFloat = transcriptHeight < natural ? 0 : Self.uncappedExtraBuffer
-        var height = Self.fixedHeight + transcriptHeight + Self.windowBuffer + extraBuffer
-        // 主进程 resizeCaptureWindow 二次钳制（workHeight 未知时只套 110/560）
-        let screenCap: CGFloat = workHeight.map { max(Self.minHeight, floor(($0 - Self.bottomMargin) / 3)) } ?? Self.mainProcessHeightCap
-        height = max(Self.minHeight, min(Self.mainProcessHeightCap, screenCap, height.rounded()))
-        return NSSize(width: Self.width, height: height)
+        NSSize(width: Self.width, height: Self.fixedWindowHeight)
     }
 
     /// 按Electron 版转写区可用宽度（380 - 根边距 12×2 - 描边 1×2 - px-3.5 14×2 = 326）估算换行行数
@@ -341,7 +330,7 @@ struct TranscriptPopoverView: View {
                     .padding(.top, 8)
                     .padding(.bottom, 12)
             }
-            .frame(minHeight: 34, maxHeight: 106) // Electron viewportMaxTranscriptHeight = 153 − 41 − 6
+            .frame(height: CapturePanel.transcriptViewport) // 固定两行视口：满了向上滚，窗口不再变高
             .scrollIndicators(.hidden) // [scrollbar-width:none]
             .onChange(of: viewModel.text) { _ in
                 withAnimation(nil) { proxy.scrollTo("transcript", anchor: .bottom) }
@@ -392,7 +381,7 @@ extension Notification.Name {
 extension CapturePanel {
     var testFrame: NSRect { panel?.frame ?? .zero }
     var testDesiredSize: NSSize { desiredSize() }
-    var testMaxHeight: CGFloat { Self.maxHeight }
+    var testMaxHeight: CGFloat { Self.fixedWindowHeight }
 
     /// 仅 paneltest 使用：模拟外部机制对窗口的微调（内容约束/像素对齐类：
     /// 顶边固定、高度增加 delta、底边下坠），用于验证 syncHeight 对外部校正的处理

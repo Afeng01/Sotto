@@ -197,33 +197,13 @@ func runPanelTest() {
     }
 
     /// 期望 frame：height = max(110, min(560, floor((workHeight−110)/3),
-    /// ceil(41 + min(natural, viewportMax) + 6 + extraBuffer)))，其中
-    /// natural = max(34, 8 + 转写行数×28 + 12)（转写区 scrollHeight = pt-2 8 + 行 + pb-3 12），
-    /// viewportMax = max(34, maxWindowHeight − 41 − 6)，
-    /// maxWindowHeight = max(75, min(max(220, floor(workHeight/3)), 41 + 4×28)) = 153，
-    /// extraBuffer：natural > viewportMax（即转写 ≥4 行触顶）时 0，否则 8。
-    /// x = workArea.x + round((workArea.width−380)/2)，y（=frame.origin，即底边）锚定 workArea 底 +110（0.2.3 的 CAPTURE_BOTTOM_MARGIN）。
+    /// 0.2.5 固定两行窗口规格（鹿鸣拍板）：高恒 123 = 41（头部）+ 2×28 + 20（转写区上下 padding）+ 6（缓冲），
+    /// 底边锚 workArea 底 +20（「只比 Dock 高一点点」）。x 居中。独立实现，不经过 CapturePanel。
     func expectedFrame(transcript: String, workArea: NSRect) -> NSRect {
-        let fixedHeight: CGFloat = 12 + 28 + 1      // 根容器垂直 padding + 头部 28 + 分隔线 1
-        let windowBuffer: CGFloat = 6               // WINDOW_HEIGHT_BUFFER
-        let lineHeight: CGFloat = 28                // LINE_HEIGHT
-        let minTranscript: CGFloat = 34             // MIN_TRANSCRIPT_HEIGHT
-        let maxTotalLines: CGFloat = 4              // POPOVER_MAX_TOTAL_LINES（含头部总预算）
-        let lines = CGFloat(harnessLineCount(of: transcript))
-        let natural = max(minTranscript, 8 + lines * lineHeight + 12)
-        let maxWindowHeight = max(
-            minTranscript + fixedHeight,
-            min(max(220, (workArea.height / 3).rounded(.down)), fixedHeight + maxTotalLines * lineHeight)
-        )
-        let viewportMax = max(minTranscript, maxWindowHeight - fixedHeight - windowBuffer)
-        let transcriptHeight = min(natural, viewportMax)
-        let extraBuffer: CGFloat = natural > viewportMax ? 0 : 8
-        var height = (fixedHeight + transcriptHeight + windowBuffer + extraBuffer).rounded(.up)
-        let screenCap = max(110, ((workArea.height - 110) / 3).rounded(.down))
-        height = max(110, min(560, screenCap, height.rounded()))
-        let width: CGFloat = 380                    // CAPTURE_WIDTH
+        let height: CGFloat = 41 + 28 * 2 + 20 + 6   // 123
+        let width: CGFloat = 380
         let x = workArea.minX + ((workArea.width - width) / 2).rounded()
-        let y = workArea.minY + 110           // CAPTURE_BOTTOM_MARGIN=110：AppKit frame.origin 即底边，底边锚定 workArea 底 +110（等价 Electron 的 y = workArea.y + workHeight − h − 110）
+        let y = workArea.minY + 20
         return NSRect(x: x, y: y, width: width, height: height)
     }
 
@@ -337,7 +317,7 @@ func runPanelTest() {
     }
 
     print("[paneltest] 漂移最大处：\(worstStep)")
-    print("[paneltest] 期望公式对比：共 \(observedSteps) 步，不符 \(expectedMismatches) 步（期望值由 harness 内独立转录的 Electron TS 公式计算）")
+    print("[paneltest] 期望公式对比：共 \(observedSteps) 步，不符 \(expectedMismatches) 步（期望值 = 0.2.5 固定两行规格）")
 
     let final = capture.testFrame
     print("[paneltest] 结束 frame=\(final) desired=\(capture.testDesiredSize)")
