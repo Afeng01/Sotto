@@ -161,8 +161,8 @@ func runCheck() async -> Int32 {
 
 /// `swift run Sotto paneltest`：浮窗高度同步复现 harness（不注册热键、不申请权限）。
 ///
-/// 模拟真实听写时序：partial result 反复替换/增长（1→3 行跨越多次）→ 灌入 30+ 行
-/// 长文验证封顶后窗口高度恒定、底边不动、内容持续滚动 → 外部高度扰动（模拟
+/// 模拟真实听写时序：partial result 反复替换/增长、跨越可见行数 → 灌入 30+ 行
+/// 长文验证固定两行窗口高度恒定、底边不动、内容持续滚动 → 外部高度扰动（模拟
 /// 约束/像素对齐类校正）→ 最终结果替换导致行数回落。每次变更后跑几帧 RunLoop，
 /// 记录 panel.frame.origin.y / size，并与下方独立实现的 Electron 期望公式逐步对比。
 /// 判定标准：封顶后高度恒定；底边 frame.origin.y 漂移 ≤0.5pt（AppKit frame.origin 即窗口底边；
@@ -196,8 +196,7 @@ func runPanelTest() {
         return max(1, Int(ceil(wrapped.height / single - 0.05)))
     }
 
-    /// 期望 frame：height = max(110, min(560, floor((workHeight−110)/3),
-    /// 0.2.5 固定两行窗口规格（鹿鸣拍板）：高恒 123 = 41（头部）+ 2×28 + 20（转写区上下 padding）+ 6（缓冲），
+    /// 期望 frame：0.2.5 固定两行窗口规格（鹿鸣拍板）：高恒 123 = 41（头部）+ 2×28 + 20（转写区上下 padding）+ 6（缓冲），
     /// 底边锚 workArea 底 +20（「只比 Dock 高一点点」）。x 居中。独立实现，不经过 CapturePanel。
     func expectedFrame(transcript: String, workArea: NSRect) -> NSRect {
         let height: CGFloat = 41 + 28 * 2 + 20 + 6   // 123
@@ -275,7 +274,7 @@ func runPanelTest() {
         capture.volume = Double((i % 20) + 1) / 20.0
     }
 
-    // 阶段一：partial result 反复增长/替换，长度循环跨越 1→3 行边界多次；
+    // 阶段一：partial result 反复增长/替换，长度跨越多种换行行数；
     // 音量回调与文本变更同帧交错（真实录音的输入节奏）
     for i in 1...200 {
         capture.transcript = "测试第\(i)句：" + String(repeating: "字", count: i % 62)
@@ -284,8 +283,8 @@ func runPanelTest() {
         observe("grow", i)
     }
 
-    // 阶段二：灌入 30+ 行长文（326pt 宽 ≈ 21 字/行，640 字 ≈ 30 行），验证 desired
-    // 封顶在 3 行后窗口高度恒定、底边不动、内容靠 ScrollView 持续上滚；
+    // 阶段二：灌入 30+ 行长文（326pt 宽 ≈ 21 字/行，640 字 ≈ 30 行），验证固定两行
+    // 视口下窗口高度恒定、底边不动、内容靠 ScrollView 持续上滚；
     // partial 持续替换 + 同一帧内多次文本变更（partial 结果到达快于屏幕刷新）
     for i in 1...200 {
         capture.transcript = "长段第\(i)句：" + String(repeating: "词", count: 640 + i % 30)

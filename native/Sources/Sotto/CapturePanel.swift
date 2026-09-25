@@ -4,9 +4,8 @@ import Combine
 
 /// 听写浮窗：非聚焦 NSPanel，屏幕底部居中，绝不抢走目标应用焦点。
 ///
-/// 视觉 1:1 对齐 Electron 版 0.1.2 的 src/renderer/VoiceCaptureApp.tsx +
-/// src/main/voice-capture-window.ts（宽 380、底部居中 margin 28、
-/// 圆角 16 卡片、popover 米白底、头部 呦呦+状态行、1px 分隔线、15px/28 行高转写区）。
+/// 视觉以 Electron 版 0.1.2 的 src/renderer/VoiceCaptureApp.tsx 为基准，
+/// 当前原生规格：宽 380、底边距 20、圆角 16、头部状态行、1px 分隔线、固定两行转写视口。
 @MainActor
 final class CapturePanel {
     private static let width: CGFloat = 380                 // CAPTURE_WIDTH（voice-capture-window.ts）
@@ -20,19 +19,10 @@ final class CapturePanel {
     private static let fixedWindowHeight: CGFloat = fixedHeight + lineHeight * 2 + 20 + windowBuffer
     private static let windowBuffer: CGFloat = 6            // WINDOW_HEIGHT_BUFFER
     private static let lineHeight: CGFloat = 28             // LINE_HEIGHT（leading-7）
-    private static let minTranscriptHeight: CGFloat = 34    // MIN_TRANSCRIPT_HEIGHT（min-h-[34px]）
-    /// POPOVER_MAX_TOTAL_LINES = 4：总行数预算含头部 1 行 → 转写区实际最多 3 行，
-    /// 超出后转写区固定 106pt、内容整体上滚（scrollTo bottom）
-    private static let maxTotalLines: CGFloat = 4
-    /// extraBuffer：未触顶时的额外余量（触顶后归零，这是 153 ≠ 55+106 的原因）
-    private static let uncappedExtraBuffer: CGFloat = 8
-    /// fixedHeight = 根容器垂直 padding（pb-3 = 12）+ 头部 28 + hintBar（无）+ 1（分隔线）
+    /// fixedHeight = 根容器垂直 padding（pb-3 = 12）+ 头部 28 + 1px 分隔线
     private static let fixedHeight: CGFloat = 12 + 28 + 1
-    /// 渲染层窗口高度上限 = min(max(220, availHeight/3), fixed + 4×28)；
-    /// max(220,…) 恒大于 153，故上限恒为 153
-    private static let maxHeight: CGFloat = fixedHeight + maxTotalLines * lineHeight
-    /// 主进程 resizeCaptureWindow 的 560 上限（实际从不 binding，保留公式完整性）
-    private static let mainProcessHeightCap: CGFloat = 560
+    /// 保留 AppKit 防御性最大尺寸；正常展示始终由 fixedWindowHeight（123pt）决定。
+    private static let contentMaxHeight: CGFloat = 153
 
     private var panel: NSPanel?
     private let viewModel = TranscriptViewModel()
@@ -42,7 +32,7 @@ final class CapturePanel {
     private var bottomAnchorY: CGFloat = 0
 
     init() {
-        // 转写变化时同步窗口高度（对齐 resizeCaptureWindow：内容高度驱动，底部对齐不变）
+        // 转写变化后重申固定窗口尺寸与底边锚点，避免内容尺寸影响窗口几何。
         viewModel.$text
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in self?.syncHeight() }
@@ -89,17 +79,12 @@ final class CapturePanel {
             panel.hidesOnDeactivate = false
             panel.worksWhenModal = true
             let hosting = NSHostingView(rootView: TranscriptPopoverView(viewModel: viewModel))
-            // 根因修复（高度失控）：NSHostingView 默认 sizingOptions =
-            // [.minSize, .intrinsicContentSize, .maxSize]，会把 SwiftUI 内容尺寸转成窗口
-            // 约束。转写超过 3 行时，ScrollView 内容高度变化（macOS 15 上经
-            // NSScrollView 约束传递）与 syncHeight 的 setFrame 赛跑，AppKit 为满足约束
-            // 把窗口从顶边向下撑大，底边坠过 Dock。置空后窗口尺寸唯一归 syncHeight/
-            // position 驱动：底边固定、向上生长、153pt（4 行总预算）封顶。
+            // 显式清空默认 sizingOptions，避免 SwiftUI 内容理想尺寸与 AppKit 窗口 frame 互相驱动。
+            // 当前尺寸完全由 position/syncHeight 控制：固定 123pt，底边锚定；153pt 仅作防御性上限。
             hosting.sizingOptions = []
             panel.contentView = hosting
-            // AppKit 层硬约束：任何路径的窗口高度都不允许越过 153pt（4 行总预算）
             panel.contentMinSize = NSSize(width: Self.width, height: Self.minHeight)
-            panel.contentMaxSize = NSSize(width: Self.width, height: Self.maxHeight)
+            panel.contentMaxSize = NSSize(width: Self.width, height: Self.contentMaxHeight)
             self.panel = panel
         }
 
@@ -119,8 +104,7 @@ final class CapturePanel {
 
     private func syncHeight() {
         guard let panel, panel.isVisible else { return }
-        let workHeight = panel.screen?.visibleFrame.height
-        let size = desiredSize(workHeight: workHeight)
+        let size = desiredSize()
         // 1:1 对齐 resizeCaptureWindow：每次调整都重新读取 workArea，绝对计算底边与
         // 水平居中，不从当前 frame 增量推算（增量式写法会把外部机制对 frame 的改动
         // 固化成漂移；绝对计算则每次自愈）。
@@ -140,7 +124,7 @@ final class CapturePanel {
         let mouseLocation = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(mouseLocation, $0.frame, false) }) ?? NSScreen.main else { return }
         let visibleFrame = screen.visibleFrame
-        let size = desiredSize(workHeight: visibleFrame.height)
+        let size = desiredSize()
         // integral 化：origin/size 全取整，防分数字号（奇数屏宽中点、非整 Dock 高）
         // 与 backing scale 舍入漂移
         let x = round(visibleFrame.midX - size.width / 2)
@@ -149,29 +133,9 @@ final class CapturePanel {
         panel.setFrame(NSRect(origin: NSPoint(x: x, y: y), size: size), display: true)
     }
 
-    /// 窗口总高：0.2.5 起固定两行档（123pt），唤起后不再随文字变化；旧动态公式仅留档参考。
-    private func desiredSize(workHeight: CGFloat? = nil) -> NSSize {
+    /// 窗口总高固定为两行规格（123pt），不依赖屏幕高度或转写长度。
+    private func desiredSize() -> NSSize {
         NSSize(width: Self.width, height: Self.fixedWindowHeight)
-    }
-
-    /// 按Electron 版转写区可用宽度（380 - 根边距 12×2 - 描边 1×2 - px-3.5 14×2 = 326）估算换行行数
-    static func transcriptLineCount(of raw: String) -> Int {
-        guard !raw.isEmpty else { return 1 }
-        let font = NSFont.systemFont(ofSize: 15)
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.lineBreakMode = .byCharWrapping
-        let attr = NSAttributedString(string: raw, attributes: [.font: font, .paragraphStyle: paragraph])
-        let usableWidth: CGFloat = 326
-        let bounds = attr.boundingRect(
-            with: NSSize(width: usableWidth, height: .greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading]
-        )
-        let singleLine = attr.boundingRect(
-            with: NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading]
-        ).height
-        guard singleLine > 0 else { return 1 }
-        return max(1, Int(ceil(bounds.height / singleLine - 0.05)))
     }
 }
 
@@ -187,8 +151,8 @@ final class TranscriptViewModel: ObservableObject {
 /// 浮窗视觉：结构复刻 Electron 版 VoiceCaptureApp.tsx 的 return JSX（L355-411）。
 /// 透明根容器（px-3 pb-3）→ 圆角 16 卡片（bg-popover + border/70 + shadow-lg）
 /// → 头部行（图标/波形 + 呦呦 + 状态文案 + 错误时“打开设置”）
-/// → 1px 分隔线（mx-3.5 border/60）→ 转写区（15px、28 行高、左对齐、最多 3 行（总预算
-/// 4 行含头部），超出后整体上滚、最新一行始终可见）。
+/// → 1px 分隔线（mx-3.5 border/60）→ 转写区（15px、28 行高、左对齐、固定两行视口，
+/// 超出内容自动上滚，最新一行始终可见）。
 struct TranscriptPopoverView: View {
     @ObservedObject var viewModel: TranscriptViewModel
 
