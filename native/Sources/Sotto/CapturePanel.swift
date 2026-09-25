@@ -332,7 +332,7 @@ struct TranscriptPopoverView: View {
             }
             .frame(height: CapturePanel.transcriptViewport) // 固定两行视口：满了向上滚，窗口不再变高
             .scrollIndicators(.hidden) // [scrollbar-width:none]
-            .background(HideScrollers()) // 系统「始终显示滚动条」时 scrollIndicators 无效，AppKit 层强制隐藏
+            .background(HideScrollers()) // AppKit 层直接关闭实际 scroller；长文本仍可滚动，但不占滚动条空间
             .onChange(of: viewModel.text) { _ in
                 withAnimation(nil) { proxy.scrollTo("transcript", anchor: .bottom) }
             }
@@ -340,17 +340,34 @@ struct TranscriptPopoverView: View {
     }
 }
 
-/// 隐藏 SwiftUI ScrollView 背后 NSScrollView 的滚动条（穿越 superview 链找到宿主 NSScrollView）
-private struct HideScrollers: NSViewRepresentable {
+/// 隐藏 SwiftUI ScrollView 背后的 NSScrollView 滚动条。
+/// SwiftUI 的 background representable 与 NSScrollView 是同一 NSHostingView 下的兄弟，
+/// 必须从共同宿主向下遍历子视图；只沿 representable 的 superview 向上找会永远找不到。
+struct HideScrollers: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView { NSView() }
+
     func updateNSView(_ view: NSView, context: Context) {
-        DispatchQueue.main.async {
-            var cursor = view.superview
-            while let p = cursor, !(p is NSScrollView) { cursor = p.superview }
-            guard let sv = cursor as? NSScrollView else { return }
-            sv.hasVerticalScroller = false
-            sv.hasHorizontalScroller = false
+        DispatchQueue.main.async { _ = Self.hide(in: view) }
+    }
+
+    @discardableResult
+    static func hide(in view: NSView) -> Int {
+        var root = view
+        while let parent = root.superview { root = parent }
+
+        var stack = [root]
+        var scrollViews: [NSScrollView] = []
+        while let node = stack.popLast() {
+            if let scroll = node as? NSScrollView { scrollViews.append(scroll) }
+            stack.append(contentsOf: node.subviews)
         }
+        for scroll in scrollViews {
+            scroll.hasVerticalScroller = false
+            scroll.hasHorizontalScroller = false
+            scroll.verticalScroller?.isHidden = true
+            scroll.horizontalScroller?.isHidden = true
+        }
+        return scrollViews.count
     }
 }
 
@@ -406,5 +423,31 @@ extension CapturePanel {
         frame.origin.y -= delta
         frame.size.height += delta
         panel.setFrame(frame, display: true)
+    }
+
+    /// paneltest：模拟系统「始终显示滚动条」，再验证产品隐藏逻辑能关掉实际 NSScroller。
+    func testHideScrollers() -> (found: Int, forcedVisible: Bool, disabled: Bool, contentHeight: CGFloat, viewportHeight: CGFloat, widthBefore: CGFloat, widthAfter: CGFloat) {
+        guard let root = panel?.contentView else { return (0, false, false, 0, 0, 0, 0) }
+        var stack = [root]
+        var scroll: NSScrollView?
+        while let node = stack.popLast() {
+            if let candidate = node as? NSScrollView { scroll = candidate; break }
+            stack.append(contentsOf: node.subviews)
+        }
+        guard let scroll else { return (0, false, false, 0, 0, 0, 0) }
+
+        scroll.scrollerStyle = .legacy
+        scroll.hasVerticalScroller = true
+        scroll.layoutSubtreeIfNeeded()
+        let forcedVisible = scroll.hasVerticalScroller
+        let contentHeight = scroll.documentView?.frame.height ?? 0
+        let viewportHeight = scroll.contentView.bounds.height
+        let widthBefore = scroll.contentView.bounds.width
+        let found = HideScrollers.hide(in: root)
+        scroll.layoutSubtreeIfNeeded()
+        let scrollerIsHidden = scroll.verticalScroller?.isHidden ?? true
+        let disabled = !scroll.hasVerticalScroller && scrollerIsHidden
+        let widthAfter = scroll.contentView.bounds.width
+        return (found, forcedVisible, disabled, contentHeight, viewportHeight, widthBefore, widthAfter)
     }
 }

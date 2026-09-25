@@ -295,6 +295,13 @@ func runPanelTest() {
         observe("cap", i, enforceCap: true)
     }
 
+    // 模拟 macOS 强制显示滚动条，再从真实浮窗的 NSView 树中验证隐藏逻辑命中。
+    let scrollTest = capture.testHideScrollers()
+    let transcriptOverflows = scrollTest.contentHeight > scrollTest.viewportHeight + 1
+    let reclaimedWidth = scrollTest.widthAfter > scrollTest.widthBefore
+    let scrollbarPass = scrollTest.found == 1 && scrollTest.forcedVisible && scrollTest.disabled && transcriptOverflows && reclaimedWidth
+    print("[paneltest] 滚动条回归：找到 NSScrollView=\(scrollTest.found)，强制显示=\(scrollTest.forcedVisible)，隐藏后关闭=\(scrollTest.disabled)，内容溢出=\(transcriptOverflows)，释放宽度=\(String(format: "%.1f", scrollTest.widthBefore))→\(String(format: "%.1f", scrollTest.widthAfter))pt")
+
     // 阶段三：外部高度扰动（模拟约束/像素对齐类校正：顶边固定、高度被撑大 0.5pt、
     // 底边下坠），观察 syncHeight 是否把外部校正转化为永久底边漂移
     for i in 1...40 {
@@ -323,7 +330,7 @@ func runPanelTest() {
     print("[paneltest] 结束 frame=\(final) desired=\(capture.testDesiredSize)")
     print("[paneltest] 封顶高度=\(capHeight)pt 高度违规次数=\(capViolations)")
     print("[paneltest] 最大底边漂移=\(String(format: "%.3f", maxAbsDrift))pt 最终漂移=\(String(format: "%.3f", drift))pt （判定阈值 ≤0.5pt）")
-    let pass = maxAbsDrift <= 0.5 && capViolations == 0 && expectedMismatches == 0
+    let pass = maxAbsDrift <= 0.5 && capViolations == 0 && expectedMismatches == 0 && scrollbarPass
     print(pass ? "[paneltest] PASS" : "[paneltest] FAIL")
 }
 
